@@ -24,11 +24,8 @@ class Ant:
 
         self._passed_way_to_resource=[] #array of passed way (x,y) coordinate to resource dislocation
 
-        self.client_socket.connect((self._host,self._port)) # connect to host
-
     def connect(self):
         self.client_socket.connect((self._host,self._port)) # connect to host
-        self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def disconnect(self):
         self.client_socket.close()
@@ -50,7 +47,7 @@ class Ant:
         except Exception,e:
             print e
 
-        self.disconnect()
+        #self.disconnect()
 
     def get_possible_direction(self):
         '''
@@ -97,10 +94,14 @@ class Ant:
         self.register()
         while True:
             print "I'm alive!"
+            time.sleep(10)
+            print "By!"
+            self.disconnect()
             break
 
 
 # /////////////////////// DEBUG ZONE ///////////////////////////
 if __name__=='__main__':
     test_ant = Ant()
+    #test_ant.register()
     test_ant.live()
