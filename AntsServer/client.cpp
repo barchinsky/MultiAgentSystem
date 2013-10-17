@@ -53,14 +53,21 @@ void Client::onError(QAbstractSocket::SocketError socketError) const
 
 void Client::onReadyRead()
 {
+    if (_socket->bytesAvailable()) {
+        qDebug()<<_socket->readAll();
+    }
+    /*
     QDataStream in(_socket);
-    qint64 msgSize = -1;
+    int msgSize = -1;
 
     if (_socket->bytesAvailable() && msgSize == -1) {
-        in >> msgSize;
+        QString str;
+        in >> str;
+        qDebug()<<in;
+        qDebug()<<str;
     }
 
-    while (_socket->bytesAvailable() < msgSize - sizeof(qint64)) {
+    while (_socket->bytesAvailable() < msgSize - sizeof(int)) {
         if (!_socket->waitForReadyRead(100)) {
             _socket->disconnectFromHost();
             break;
@@ -70,4 +77,5 @@ void Client::onReadyRead()
     QString str;
     in >> str;
     qDebug()<<str;
+    */
 }
