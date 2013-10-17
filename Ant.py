@@ -2,25 +2,59 @@
 
 import socket
 import ConfigParser
+import  time
+import sys
+import json
+
+sys.path.append('templates')
+from json_templates import *
 
 class Ant:
-    def __init__(self,x,y):
+    def __init__(self):
         self._config=ConfigParser.RawConfigParser()
-        self._config.read('conf/ant.conf')
+        self._config.read('conf/config.conf')
         self._host=self._config.get("Ant","host")
-        self._port=self._config.get("Ant","port")
+        self._port=self._config.getint("Ant","port")
         
-        self.client_socket=socket.socket(socket.AF_INTET,socket.SOCK_STREAM) # socket connects to anthell server
+        self.client_socket=socket.socket(socket.AF_INET,socket.SOCK_STREAM) # socket connects to anthell server
 
-        self._pos_x=x
-        self._pos_y=y
+        self._id=int(time.time())
+        self._pos_x=None
+        self._pos_y=None
 
         self._passed_way_to_resource=[] #array of passed way (x,y) coordinate to resource dislocation
 
-    def get_possible_way(self):
+    def connect(self):
+        self.client_socket.connect((self._host,self._port)) # connect to host
+
+    def disconnect(self):
+        self.client_socket.close()
+
+    def register(self):
+        '''
+        Provide client registration
+        '''
+        reg_query=REGISTRATION.substitute(ID=self._id)
+        print "Registration query:",reg_query
+
+        json_query=json.dumps(reg_query)
+        print "Json query:",json_query.encode('utf-8')
+
+        try:
+            #self.client_socket.connect((self._host,self._port))
+            self.client_socket.sendall(json_query.encode('utf-8'))
+            print "Data sended."
+        except Exception,e:
+            print e
+
+        #self.disconnect()
+
+    def get_possible_direction(self):
         '''
         Retrive data from server about possible way
+        posible_way - array of possible moving directions
         '''
+        posible_way=self.server.get_posible_way(self.ant_id)
         pass
 
     def choose_way(self):
@@ -56,6 +90,18 @@ class Ant:
         '''
         Main function, starts socket server and describes ant logic
         '''
+        self.connect()
+        self.register()
         while True:
-            pass
-        pass
+            print "I'm alive!"
+            time.sleep(10)
+            print "By!"
+            self.disconnect()
+            break
+
+
+# /////////////////////// DEBUG ZONE ///////////////////////////
+if __name__=='__main__':
+    test_ant = Ant()
+    #test_ant.register()
+    test_ant.live()
