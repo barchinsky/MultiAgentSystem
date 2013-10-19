@@ -24,8 +24,8 @@ class Ant:
 
         self._passed_way_to_resource=[] #array of passed way (x,y) coordinate to resource dislocation
 
-    def connect(self):
-        self.client_socket.connect((self._host,self._port)) # connect to host
+    def connect(self,host,port):
+        self.client_socket.connect((host,port)) # connect to host
 
     def disconnect(self):
         self.client_socket.close()
@@ -34,20 +34,21 @@ class Ant:
         '''
         Provide client registration
         '''
-        reg_query=REGISTRATION.substitute(ID=self._id)
+        reg_query = self.get_reg_query(self._id)
         print "Registration query:",reg_query
 
-        json_query=json.dumps(reg_query)
-        print "Json query:",json_query.encode('utf-8')
-
         try:
-            #self.client_socket.connect((self._host,self._port))
-            self.client_socket.sendall(json_query.encode('utf-8'))
+            self.client_socket.sendall(reg_query.encode('utf-8'))
             print "Data sended."
+            response = self.client_socket.recv(1024)
+            print "Response goted:",response
         except Exception,e:
             print e
 
-        #self.disconnect()
+    def get_reg_query(self,ant_id):
+        register_query=[{"API_KEY":"register","OBJECT":{"ID":and_id}}]
+        return json.dumps(register_query)
+        return 
 
     def get_possible_direction(self):
         '''
@@ -90,7 +91,7 @@ class Ant:
         '''
         Main function, starts socket server and describes ant logic
         '''
-        self.connect()
+        self.connect((self._host,self._port))
         self.register()
         while True:
             print "I'm alive!"
