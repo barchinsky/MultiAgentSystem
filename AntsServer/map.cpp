@@ -13,7 +13,7 @@ Map::Map(QWidget *parent) :
     _serv = new Server(this);
     qDebug()<<_serv;
 
-    if (_serv->doStartServer(QHostAddress::QHostAddress("127.0.0.1"), 9090)) {
+    if (_serv->doStartServer(QHostAddress::QHostAddress("213.227.249.221"), 9000)) {
         qDebug()<<"connected";
     } else {
         qDebug()<<"failed";

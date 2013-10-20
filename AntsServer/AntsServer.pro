@@ -19,6 +19,7 @@ SOURCES += main.cpp\
 
 HEADERS  += map.h \
     server.h \
-    client.h
+    client.h \
+    constants.h
 
 FORMS    += map.ui
