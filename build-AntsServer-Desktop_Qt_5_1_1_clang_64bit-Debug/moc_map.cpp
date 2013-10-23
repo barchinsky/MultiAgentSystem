@@ -60,7 +60,7 @@ void Map::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **
 }
 
 const QMetaObject Map::staticMetaObject = {
-    { &QWidget::staticMetaObject, qt_meta_stringdata_Map.data,
+    { &QGLWidget::staticMetaObject, qt_meta_stringdata_Map.data,
       qt_meta_data_Map,  qt_static_metacall, 0, 0}
 };
 
@@ -75,12 +75,12 @@ void *Map::qt_metacast(const char *_clname)
     if (!_clname) return 0;
     if (!strcmp(_clname, qt_meta_stringdata_Map.stringdata))
         return static_cast<void*>(const_cast< Map*>(this));
-    return QWidget::qt_metacast(_clname);
+    return QGLWidget::qt_metacast(_clname);
 }
 
 int Map::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
-    _id = QWidget::qt_metacall(_c, _id, _a);
+    _id = QGLWidget::qt_metacall(_c, _id, _a);
     if (_id < 0)
         return _id;
     return _id;
