@@ -52,8 +52,8 @@ QByteArray Server::registerClient(Client *ant)
 
     QJsonArray coordArray;
     double x,y;
-    x = ((double)(rand()%200 - 100)) / 100.0;
-    y = ((double)(rand()%200 - 100) / 100.0);
+    x = (double)(rand()%100) / 100.0;
+    y = (double)(rand()%100) / 100.0;
     ant->_position = QPointF(x,y);
 
 
@@ -63,8 +63,8 @@ QByteArray Server::registerClient(Client *ant)
     QJsonObject coord;
     coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
 
-    x = -0.7;
-    y = -0.7;
+    x = 0.1;
+    y = 0.1;
     coordArray[0] = QJsonValue(x);
     coordArray[1] = QJsonValue(y);
     coord.insert(kJSON_COORD_BASE,QJsonValue(coordArray));
@@ -92,19 +92,20 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
                 y = coordValueY.toDouble();
 
                 double vectorLength = qSqrt(qPow(x,2) + qPow(y,2));
-                qDebug()<<x<<" "<<y<<" = "<<vectorLength;
+
 
                 if (vectorLength <= 1.0) {
                     QPointF antPosition = ant->_position;
                     QPointF vector(x,y);
                     QPointF newAntPosition = antPosition + vector*0.01;
 
-                    QRect mapRect(-100,-100,200,200);
+                    QRect mapRect(0,0,100,100);
                     QPoint intPoint((int)newAntPosition.x()*100,(int)newAntPosition.y()*100);
                     if (!mapRect.contains(intPoint)) {
                         newAntPosition = antPosition;
                     } else {
-                        ant->_position =newAntPosition;
+                        ant->_position = newAntPosition;
+                        ant->_direction = vector;
                     }
 
                     // create JSON
@@ -147,10 +148,9 @@ bool Server::doStartServer(QHostAddress addr, qint16 port)
 void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 {
     QString str(byteArray);
-    qDebug()<<"Client: "<<client->getID()<<"data: "<<str;
+//    qDebug()<<"Client: "<<client->getID()<<"data: "<<str;
 
     QJsonDocument d = QJsonDocument::fromJson(str.toUtf8());
-    qWarning() << d;
 
     QString apiKey;
     QJsonObject object;
@@ -183,13 +183,12 @@ void Server::sendDataToClient(Client *client, QByteArray byteArray)
 
 void Server::incomingConnection(qintptr handle)
 {
-    qDebug()<<handle;
-
     Client *client = new Client(handle, this, this);
 
     connect(client, SIGNAL(removeUser(Client*)), this, SLOT(onRemoveUser(Client*)));
 
     _clients.append(client);
+    emit onClientsCountChanged(_clients.count());
 }
 
 
@@ -198,6 +197,7 @@ void Server::incomingConnection(qintptr handle)
 void Server::onRemoveUser(Client *client)
 {
     _clients.removeAt(_clients.indexOf(client));
+    emit onClientsCountChanged(_clients.count());
 }
 
 

@@ -14,6 +14,7 @@ class Client : public QObject
 private:
     Server *_server;
     QPointF _position;
+    QPointF _direction;
     QTcpSocket *_socket;
     QString _name;    
     qint32 _clientID;
@@ -22,6 +23,8 @@ public:
     explicit Client(int desc, Server *serv, QObject *parent = 0);
 
     qint32 getID();
+    QPointF getPosition();
+    QPointF getDircetion();
     void sendData(QByteArray);
 
 signals:

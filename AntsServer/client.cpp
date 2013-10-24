@@ -11,6 +11,7 @@ Client::Client(int handle, Server *serv, QObject *parent):
     _server = serv;
     _clientID = handle;
     _position = QPointF(0,0);
+    _direction = QPointF(0,1);
 
     _socket = new QTcpSocket(this);
     _socket->setSocketDescriptor(handle);
@@ -28,9 +29,19 @@ qint32 Client::getID()
     return _clientID;
 }
 
+QPointF Client::getPosition()
+{
+    return _position;
+}
+
+QPointF Client::getDircetion()
+{
+    return _direction;
+}
+
 void Client::sendData(QByteArray dataArray)
 {
-    qDebug() << "Send to" << _clientID << "data:" << QString(dataArray);
+//    qDebug() << "Send to" << _clientID << "data:" << QString(dataArray);
     _socket->write(dataArray);
 }
 

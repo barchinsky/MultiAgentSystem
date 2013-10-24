@@ -28,6 +28,12 @@ private:
     Server *_serv;
     QTimer timer;
     int wax ,way; // Размеры окна
+
+    void drawAnts();
+
+public slots:
+    void clientsCountChanged(int clientsCount);
+
 };
 
 #endif // MAP_H

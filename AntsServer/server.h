@@ -6,9 +6,12 @@
 
 class Client;
 class QJsonObject;
+class Map;
 
 class Server : public QTcpServer
 {
+    friend class Map;
+
     Q_OBJECT
 private:
     QTcpSocket *_sok;
@@ -18,7 +21,7 @@ private:
     QByteArray parseJSONwithKeyAndObject(Client *ant,QString, QJsonObject);
     QByteArray getErrorJSONData();
     QByteArray registerClient(Client *ant);
-    QByteArray isAntCanMove(Client *ant, QJsonObject vector);
+    QByteArray isAntCanMove(Client *ant, QJsonObject vector);       
 
 protected:
     void incomingConnection(qintptr handle);
@@ -30,7 +33,8 @@ public:
     void parseDataFromClient(Client *,QByteArray);
     void sendDataToClient(Client *, QByteArray);
 
-signals:         
+signals:
+    void onClientsCountChanged(int);
 
 public slots:
     void onRemoveUser(Client*);

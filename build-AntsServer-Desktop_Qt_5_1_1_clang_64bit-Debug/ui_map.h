@@ -26,7 +26,7 @@ public:
     {
         if (Map->objectName().isEmpty())
             Map->setObjectName(QStringLiteral("Map"));
-        Map->resize(400, 300);
+        Map->resize(625, 438);
 
         retranslateUi(Map);
 

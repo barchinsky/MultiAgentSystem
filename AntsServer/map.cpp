@@ -1,8 +1,10 @@
 #include <qdebug.h>
+#include <QtCore/qmath.h>
 
 #include "map.h"
 #include "ui_map.h"
-#include <QtCore/qmath.h>
+#include "client.h"
+
 
 
 Map::Map(QWidget *parent) :
@@ -14,8 +16,9 @@ Map::Map(QWidget *parent) :
     _serv = new Server(this);
     qDebug()<<_serv;
 
-    if (_serv->doStartServer(QHostAddress::QHostAddress("213.227.249.221"), 9000)) {
+    if (_serv->doStartServer(QHostAddress::QHostAddress("127.0.0.1"), 9000)) {
         qDebug()<<"connected";
+        connect(_serv,SIGNAL(onClientsCountChanged(int)),this,SLOT(clientsCountChanged(int)));
     } else {
         qDebug()<<"failed";
     }
@@ -24,10 +27,12 @@ Map::Map(QWidget *parent) :
     glDepthFunc(GL_LEQUAL);
 
      // Configure the timer
-    connect(&timer, SIGNAL(timeout()), this, SLOT(updateGL()));
-    timer.start(17);
+//    connect(&timer, SIGNAL(timeout()), this, SLOT(updateGL()));
+//    timer.start(16);
 
-
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateGL()));
+    timer->start(1);
 }
 
 Map::~Map()
@@ -35,57 +40,77 @@ Map::~Map()
     delete ui;
 }
 
+// slots
+
+void Map::clientsCountChanged(int clientsCount)
+{
+    qDebug()<<"clients count:"<<clientsCount;
+//    ui->lbClientCount->setText(QString::number(clientsCount));
+}
+
+
 void Map::initializeGL()
 {
     qglClearColor(Qt::white); // Черный цвет фона
 }
 
-void Map::resizeGL(int nWidth, int nHeight)
+void Map::resizeGL(int width, int height)
 {
+    int side = qMin(width, height);
+    glViewport((width - side) / 2, (height - side) / 2, side, side);
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glViewport(0, 0, (GLint)nWidth, (GLint)nHeight);
-    wax=nWidth;
-        way=nHeight;
+#ifdef QT_OPENGL_ES_1
+    glOrthof(0.0, 1.0, 0.0, 1.0, 1.0, 0.0);
+#else
+    glOrtho(0, 1, 0, 1, 1.0, 0.0);
+#endif
+    glMatrixMode(GL_MODELVIEW);
 }
 
 void Map::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // чистим буфер изображения и буфер глубины
-    glMatrixMode(GL_PROJECTION); // устанавливаем матрицу
-    glLoadIdentity(); // загружаем матрицу
-    glOrtho(0,wax,way,0,1,0); // подготавливаем плоскости для матрицы
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glLoadIdentity();
 
     qglColor(Qt::black);
-//    renderText(10, 10 , 0, QString::fromUtf8("Вы набрали очков:"), QFont() , 2000);
 
-//    glBegin(GL_POLYGON);
-//    glColor4f(0,1,0, 0.25);// Цвет выделенной области
-//    // Координаты выделенной области
-//    glVertex2f(10, 10);
-//    glVertex2f(10, 30);
-//    glVertex2f(30, 30);
-//    glVertex2f(30, 10);
-//    glEnd();
-
-    static float rad = 0;
-    const float radius = 100;
-    float x0 = 100;
-    float y0 = 100;
-    float x = x0 + radius*qCos(rad);
-    float y = y0 + radius*qSin(rad);
-    rad += 0.314 ;
-    glBegin(GL_LINES);
-    {
-        glVertex2f(x0,y0);
-        glVertex2f(x,y);
-    }
-    glEnd();
-
+    renderText(0.5,0.5,0.0,QString("ants "));
+    drawAnts();
 
     swapBuffers();
+}
+
+void Map::drawAnts()
+{
+//    QList<Client *> ants = _serv->_clients;
+    int count = _serv->_clients.count();
+
+
+    glLineWidth(2.0);
+    glBegin(GL_LINES);
+    {
+
+        for (int i = 0; i < 10; i++) {
+            float x = rand()%100 / 100.0;
+            float y = rand()%100 / 100.0;
+            glVertex2f(x,y);
+            glVertex2f(x+0.01,y+0.01);
+        }
+        /*
+
+        foreach (Client *ant, ants) {
+            QPointF position = ant->getPosition();
+            QPointF direction = ant->getDircetion();
+
+            glVertex2f(position.x(),position.y());
+            glVertex2f(direction.x()*0.01,direction.y()*0.01);
+        }
+        */
+    }
+    glEnd();
+    glLineWidth(1.0);
 }
 
 
