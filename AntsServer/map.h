@@ -23,12 +23,17 @@ public:
     void resizeGL(int nWidth, int nHeight); // Метод вызываемый после каждого изменения размера окна
     void paintGL(); // Метод для вывода изображения на экран
 
+    static float antStep();
+    static QPointF baseCoord();
+
 private:
     Ui::Map *ui;
     Server *_serv;
     QTimer timer;
-    int wax ,way; // Размеры окна
+    int _antsCount;
 
+    void drawBorder();
+    void drawBase();
     void drawAnts();
 
 public slots:

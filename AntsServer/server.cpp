@@ -11,7 +11,7 @@
 
 #include "client.h"
 #include "constants.h"
-
+#include "map.h"
 
 Server::Server(QObject *parent) :
     QTcpServer(parent)
@@ -63,8 +63,10 @@ QByteArray Server::registerClient(Client *ant)
     QJsonObject coord;
     coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
 
-    x = 0.1;
-    y = 0.1;
+    QPointF baseCoords = Map::baseCoord();
+
+    x = baseCoords.x();
+    y = baseCoords.y();
     coordArray[0] = QJsonValue(x);
     coordArray[1] = QJsonValue(y);
     coord.insert(kJSON_COORD_BASE,QJsonValue(coordArray));
@@ -97,7 +99,7 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
                 if (vectorLength <= 1.0) {
                     QPointF antPosition = ant->_position;
                     QPointF vector(x,y);
-                    QPointF newAntPosition = antPosition + vector*0.01;
+                    QPointF newAntPosition = antPosition + vector*Map::antStep();
 
                     QRect mapRect(0,0,100,100);
                     QPoint intPoint((int)newAntPosition.x()*100,(int)newAntPosition.y()*100);
