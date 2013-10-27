@@ -26,15 +26,23 @@ public:
     static float antStep();
     static QPointF baseCoord();
 
+    QList<QPointF> _foodPositions;
+    QList<QList<QPointF> > _barrierPostions;
+
 private:
     Ui::Map *ui;
     Server *_serv;
     QTimer timer;
     int _antsCount;
 
+    void setupFoods();
+    void setupBarriers();
+
     void drawBorder();
     void drawBase();
     void drawAnts();
+    void drawFood();
+    void drawBarries();
 
 public slots:
     void clientsCountChanged(int clientsCount);

@@ -9,6 +9,8 @@
 #define kJSON_COORD_ANT    QString("COORD_ANT")
 #define kJSON_COORD_BASE   QString("COORD_BASE")
 #define kJSON_VECTOR       QString("VECTOR")
+#define kJSON_ID           QString("ID")
+#define kJSON_OBJECT_TYPE  QString("OBJECT_TYPE")
 
 // API keys
 #define kAPI_register           QString("registration")

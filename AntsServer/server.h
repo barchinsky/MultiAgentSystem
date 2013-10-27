@@ -21,7 +21,8 @@ private:
     QByteArray parseJSONwithKeyAndObject(Client *ant,QString, QJsonObject);
     QByteArray getErrorJSONData();
     QByteArray registerClient(Client *ant);
-    QByteArray isAntCanMove(Client *ant, QJsonObject vector);       
+    QByteArray isAntCanMove(Client *ant, QJsonObject vector);
+    QByteArray getNearestObjects(Client *ant);
 
 protected:
     void incomingConnection(qintptr handle);

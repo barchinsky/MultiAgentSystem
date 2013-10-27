@@ -17,8 +17,8 @@ Map::Map(QWidget *parent) :
     qDebug()<<_serv;
 
     _antsCount = 0;
-
-
+    setupFoods();
+    setupBarriers();
 
     if (_serv->doStartServer(QHostAddress(QString("127.0.0.1")),12000)) {
         qDebug()<<"connected";
@@ -29,10 +29,6 @@ Map::Map(QWidget *parent) :
 
     setFormat(QGLFormat(QGL::DoubleBuffer));
     glDepthFunc(GL_LEQUAL);
-
-     // Configure the timer
-//    connect(&timer, SIGNAL(timeout()), this, SLOT(updateGL()));
-//    timer.start(16);
 
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateGL()));
@@ -80,9 +76,11 @@ void Map::paintGL()
     qglColor(Qt::black);
 
     drawBorder();
-    renderText(0.01,1.01,0.0,QString::fromUtf8("Ants count: %1").arg(_antsCount));
+    renderText(0.01,1 + 2*antStep(),0.0,QString::fromUtf8("Ants count: %1").arg(_antsCount));
     drawBase();
     drawAnts();
+    drawFood();
+    drawBarries();
 
     swapBuffers();
 }
@@ -97,15 +95,55 @@ QPointF Map::baseCoord()
     return QPointF(0.02,0.02);
 }
 
+void Map::setupFoods()
+{
+    _foodPositions.append(QPointF(0.70,0.70));
+    _foodPositions.append(QPointF(0.80,0.68));
+    _foodPositions.append(QPointF(0.59,0.89));
+    _foodPositions.append(QPointF(0.78,0.49));
+    _foodPositions.append(QPointF(0.89,0.64));
+}
+
+void Map::setupBarriers()
+{
+    QList<QPointF> barrier1;
+    barrier1.append(QPointF(0.15,0.52));
+    barrier1.append(QPointF(0.43,0.48));
+    barrier1.append(QPointF(0.50,0.19));
+    barrier1.append(QPointF(0.30,0.21));
+
+    QList<QPointF> barrier2;
+    barrier2.append(QPointF(0.61,0.29));
+    barrier2.append(QPointF(0.60,0.55));
+    barrier2.append(QPointF(0.75,0.61));
+    barrier2.append(QPointF(0.70,0.35));
+    barrier2.append(QPointF(0.73,0.36));
+    barrier2.append(QPointF(0.69,0.15));
+
+    QList<QPointF> barrier3;
+    barrier3.append(QPointF(0.32,0.59));
+    barrier3.append(QPointF(0.10,0.75));
+    barrier3.append(QPointF(0.29,0.81));
+    barrier3.append(QPointF(0.40,0.78   ));
+    barrier3.append(QPointF(0.42,0.61));
+
+    _barrierPostions.append(barrier1);
+    _barrierPostions.append(barrier2);
+    _barrierPostions.append(barrier3);
+
+}
+
 void Map::drawBorder()
 {
     qglColor(Qt::black);
 
+    float offset = antStep();
+
     glBegin(GL_LINE_LOOP);
-    glVertex2f(0,1);
-    glVertex2f(1,1);
-    glVertex2f(1,0);
-    glVertex2f(0,0);
+    glVertex2f(-offset,1+offset);
+    glVertex2f(1+offset,1+offset);
+    glVertex2f(1+offset,-offset);
+    glVertex2f(-offset,-offset);
     glEnd();
 }
 
@@ -145,6 +183,36 @@ void Map::drawAnts()
         }     
     }
     glEnd();    
+}
+
+
+void Map::drawFood()
+{
+    qglColor(Qt::green);
+    glPointSize(5);
+    glBegin(GL_POINTS);
+    {
+        foreach (QPointF foodPoint, _foodPositions) {
+            glVertex2f(foodPoint.x(),foodPoint.y());
+        }
+    }
+    glEnd();
+    glPointSize(1);
+}
+
+void Map::drawBarries()
+{
+    qglColor(Qt::darkGray);
+
+    foreach (QList<QPointF> barrier, _barrierPostions) {
+        glBegin(GL_LINE_LOOP);
+        {
+            foreach (QPointF point, barrier) {
+                glVertex2f(point.x(),point.y());
+            }
+            glEnd();
+        }
+    }
 }
 
 

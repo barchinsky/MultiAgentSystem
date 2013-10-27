@@ -26,6 +26,8 @@ QByteArray Server::parseJSONwithKeyAndObject(Client *ant, QString key, QJsonObje
         return registerClient(ant);
     } else if (key == kAPI_is_ant_can_move) {
         return isAntCanMove(ant,obj);
+    } else if (key == kAPI_nearest_objects) {
+        return getNearestObjects(ant);
     }
 
     return getErrorJSONData();
@@ -132,6 +134,47 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
 
     // if something wrong return error
     return getErrorJSONData();
+}
+
+QByteArray Server::getNearestObjects(Client *ant)
+{
+    QJsonObject rootObject;
+    rootObject.insert(kJSON_API_KEY,QJsonValue(kAPI_nearest_objects));
+
+    QJsonDocument json(rootObject);
+    return json.toJson();
+
+    /*
+    QJsonObject coordJSON;
+    coordJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_register));
+
+    QJsonArray coordArray;
+    double x,y;
+    x = (double)(rand()%100) / 100.0;
+    y = (double)(rand()%100) / 100.0;
+    ant->_position = QPointF(x,y);
+
+
+    coordArray.push_back(QJsonValue(x));
+    coordArray.push_back(QJsonValue(y));
+
+    QJsonObject coord;
+    coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
+
+    QPointF baseCoords = Map::baseCoord();
+
+    x = baseCoords.x();
+    y = baseCoords.y();
+    coordArray[0] = QJsonValue(x);
+    coordArray[1] = QJsonValue(y);
+    coord.insert(kJSON_COORD_BASE,QJsonValue(coordArray));
+
+    coordJSON.insert(kJSON_OBJECT,QJsonValue(coord));
+    QJsonDocument json(coordJSON);
+
+    return json.toJson();
+    */
+
 }
 
 // public
