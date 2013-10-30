@@ -13,9 +13,10 @@
 #include "constants.h"
 #include "map.h"
 
-Server::Server(QObject *parent) :
+Server::Server(Map *map, QObject *parent) :
     QTcpServer(parent)
-{    
+{
+    _map = map;
 }
 
 // private
@@ -52,23 +53,19 @@ QByteArray Server::registerClient(Client *ant)
     QJsonObject coordJSON;
     coordJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_register));
 
-    QJsonArray coordArray;
-    double x,y;
-    x = (double)(rand()%100) / 100.0;
-    y = (double)(rand()%100) / 100.0;
-    ant->_position = QPointF(x,y);
+    QJsonArray coordArray;    
+    ant->_position = _map->antBornPoint();
 
-
-    coordArray.push_back(QJsonValue(x));
-    coordArray.push_back(QJsonValue(y));
+    coordArray.push_back(QJsonValue(ant->_position.x()));
+    coordArray.push_back(QJsonValue(ant->_position.y()));
 
     QJsonObject coord;
     coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
 
     QPointF baseCoords = Map::baseCoord();
 
-    x = baseCoords.x();
-    y = baseCoords.y();
+    double x = baseCoords.x();
+    double y = baseCoords.y();
     coordArray[0] = QJsonValue(x);
     coordArray[1] = QJsonValue(y);
     coord.insert(kJSON_COORD_BASE,QJsonValue(coordArray));
@@ -99,8 +96,12 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
 
 
                 if (vectorLength <= 1.0) {
-                    QPointF antPosition = ant->_position;
+                    //QPointF antPosition = ant->_position;
                     QPointF vector(x,y);
+                    ant->_direction = vector;
+
+                    ant->_position = _map->nextPositionForAnt(ant);
+                    /*
                     QPointF newAntPosition = antPosition + vector*Map::antStep();
 
                     QRect mapRect(0,0,100,100);
@@ -111,14 +112,15 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
                         ant->_position = newAntPosition;
                         ant->_direction = vector;
                     }
+                    */
 
                     // create JSON
                     QJsonObject resultJSON;
                     resultJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_is_ant_can_move));
 
                     QJsonArray coordArray;
-                    coordArray.push_back(QJsonValue(newAntPosition.x()));
-                    coordArray.push_back(QJsonValue(newAntPosition.y()));
+                    coordArray.push_back(QJsonValue(ant->_position.x()));
+                    coordArray.push_back(QJsonValue(ant->_position.y()));
 
                     QJsonObject ant_coord;
                     ant_coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
@@ -141,40 +143,60 @@ QByteArray Server::getNearestObjects(Client *ant)
     QJsonObject rootObject;
     rootObject.insert(kJSON_API_KEY,QJsonValue(kAPI_nearest_objects));
 
+    QJsonObject mainObject;
+
+    NearObjects nearObjects = _map->nearObjectsForAnt(ant);
+    qDebug()<<"ants "<<nearObjects.ants;
+    qDebug()<<"foods "<<nearObjects.foods;
+    qDebug()<<"barriers "<<nearObjects.barriers;
+
+
+    QJsonArray antsArray;
+    foreach (Client *client, nearObjects.ants) {
+        QJsonObject antObject;
+
+        QPointF antPosition = client->getPosition();
+        QJsonArray coordsValue;
+        coordsValue.push_back(QJsonValue(antPosition.x()));
+        coordsValue.push_back(QJsonValue(antPosition.y()));
+        antObject.insert(kJSON_COORD,QJsonArray(coordsValue));
+
+        QString socketStr;
+        socketStr += client->_socket->peerAddress().toString();
+        socketStr += ":" + QString::number(client->_socket->peerPort());
+        antObject.insert(kJSON_SOCKET,QJsonValue(socketStr));
+
+        antsArray.push_back(QJsonValue(antObject));
+    }
+    mainObject.insert(kJSON_ANTS,QJsonValue(antsArray));
+
+
+    QJsonArray foodsArray;
+    foreach (QPointF foodPoint, nearObjects.foods) {
+        QJsonArray coordsValue;
+        coordsValue.push_back(QJsonValue(foodPoint.x()));
+        coordsValue.push_back(QJsonValue(foodPoint.y()));
+        foodsArray.push_back(QJsonValue(coordsValue));
+    }
+    mainObject.insert(kJSON_FOODS,QJsonValue(foodsArray));
+
+    QJsonArray barriersArray;
+    foreach (QPolygonF polygon, nearObjects.barriers) {
+        QJsonArray coordsArray;
+        foreach (QPointF point, polygon) {
+            QJsonArray coordsValue;
+            coordsValue.push_back(QJsonValue(point.x()));
+            coordsValue.push_back(QJsonValue(point.y()));
+            coordsArray.push_back(QJsonValue(coordsValue));
+        }
+        barriersArray.push_back(QJsonValue(coordsArray));
+    }
+    mainObject.insert(kJSON_BARRIERS,QJsonValue(barriersArray));
+
+    rootObject.insert(kJSON_OBJECT,QJsonValue(mainObject));
+
     QJsonDocument json(rootObject);
     return json.toJson();
-
-    /*
-    QJsonObject coordJSON;
-    coordJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_register));
-
-    QJsonArray coordArray;
-    double x,y;
-    x = (double)(rand()%100) / 100.0;
-    y = (double)(rand()%100) / 100.0;
-    ant->_position = QPointF(x,y);
-
-
-    coordArray.push_back(QJsonValue(x));
-    coordArray.push_back(QJsonValue(y));
-
-    QJsonObject coord;
-    coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
-
-    QPointF baseCoords = Map::baseCoord();
-
-    x = baseCoords.x();
-    y = baseCoords.y();
-    coordArray[0] = QJsonValue(x);
-    coordArray[1] = QJsonValue(y);
-    coord.insert(kJSON_COORD_BASE,QJsonValue(coordArray));
-
-    coordJSON.insert(kJSON_OBJECT,QJsonValue(coord));
-    QJsonDocument json(coordJSON);
-
-    return json.toJson();
-    */
-
 }
 
 // public
@@ -229,6 +251,14 @@ void Server::sendDataToClient(Client *client, QByteArray byteArray)
 void Server::incomingConnection(qintptr handle)
 {
     Client *client = new Client(handle, this, this);
+
+    qDebug() << "Local: \n";
+    qDebug() << client->_socket->localAddress().toString();
+    qDebug() << client->_socket->localPort();
+
+    qDebug() << "Peer: \n";
+    qDebug() << client->_socket->peerAddress().toString();
+    qDebug() << client->_socket->peerPort();
 
     connect(client, SIGNAL(removeUser(Client*)), this, SLOT(onRemoveUser(Client*)));
 

@@ -4,12 +4,19 @@
 #include <QWidget>
 #include <QtOpenGL>
 #include <QTimer>
+#include <QPolygonF>
 
 #include "server.h"
 
 namespace Ui {
 class Map;
 }
+
+typedef struct {
+    QVector<Client *> ants;
+    QVector<QPointF> foods;
+    QVector<QPolygonF> barriers;
+} NearObjects;
 
 class Map : public QGLWidget
 {
@@ -23,17 +30,27 @@ public:
     void resizeGL(int nWidth, int nHeight); // Метод вызываемый после каждого изменения размера окна
     void paintGL(); // Метод для вывода изображения на экран
 
-    static float antStep();
     static QPointF baseCoord();
 
-    QList<QPointF> _foodPositions;
-    QList<QList<QPointF> > _barrierPostions;
+    QPointF antBornPoint();
+    QPointF nextPositionForAnt(Client *ant);
+
+    NearObjects nearObjectsForAnt(Client *ant);
+    QVector<QPolygonF> barriersNearAntPolygon(QPolygonF &antPolygon);
+    QVector<QPointF> foodPositionsNearAntPolygon(QPolygonF &antPolygon);
+    QVector<Client *> antsNearAntPolygon(QPolygonF &antPolygon);
 
 private:
     Ui::Map *ui;
     Server *_serv;
     QTimer timer;
     int _antsCount;
+
+    float _antStep;
+    float _antLookingRadius;
+
+    QList<QPointF> _foodPositions;
+    QList<QPolygonF> _barrierPostions;
 
     void setupFoods();
     void setupBarriers();

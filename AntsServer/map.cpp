@@ -1,9 +1,11 @@
 #include <qdebug.h>
 #include <QtCore/qmath.h>
 
+
 #include "map.h"
 #include "ui_map.h"
 #include "client.h"
+#include "constants.h"
 
 
 
@@ -13,14 +15,17 @@ Map::Map(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    _serv = new Server(this);
-    qDebug()<<_serv;
+    _serv = new Server(this,this);
 
     _antsCount = 0;
+    _antStep = 0.01;
+    _antLookingRadius = 0.05;
+
     setupFoods();
     setupBarriers();
 
-    if (_serv->doStartServer(QHostAddress(QString("127.0.0.1")),12000)) {
+
+    if (_serv->doStartServer(QHostAddress(QString("127.0.0.1")),9000)) {
         qDebug()<<"connected";
         connect(_serv,SIGNAL(onClientsCountChanged(int)),this,SLOT(clientsCountChanged(int)));
     } else {
@@ -76,7 +81,7 @@ void Map::paintGL()
     qglColor(Qt::black);
 
     drawBorder();
-    renderText(0.01,1 + 2*antStep(),0.0,QString::fromUtf8("Ants count: %1").arg(_antsCount));
+    renderText(0.01,1 + 2*_antStep,0.0,QString::fromUtf8("Ants count: %1").arg(_antsCount));
     drawBase();
     drawAnts();
     drawFood();
@@ -85,15 +90,108 @@ void Map::paintGL()
     swapBuffers();
 }
 
-float Map::antStep()
-{
-    return 0.01;
-}
+// static methods
 
 QPointF Map::baseCoord()
 {
     return QPointF(0.02,0.02);
 }
+
+// public methods
+
+QPointF Map::antBornPoint()
+{
+    float x = rand()%20 / 100.0;
+    float y = rand()%20 / 100.0;
+
+    QPointF bornPoint(x,y);
+    return bornPoint;
+}
+
+QPointF Map::nextPositionForAnt(Client *ant)
+{
+    QPointF nextPosition = ant->getPosition() + ant->getDircetion() * _antStep;
+    QPolygonF mapBorder;
+    mapBorder << QPointF(0.0,0.0) << QPointF(1.0,0.0) << QPointF(1.0,1.0) << QPointF(0.0,1.0);
+    if (!mapBorder.containsPoint(nextPosition,Qt::OddEvenFill)) {
+        return ant->getPosition();
+    }
+
+    foreach (QPolygonF barrier, _barrierPostions) {
+        if (barrier.containsPoint(nextPosition,Qt::OddEvenFill)) {
+            return ant->getPosition();
+        }
+    }
+    return nextPosition;
+}
+
+NearObjects Map::nearObjectsForAnt(Client *ant)
+{
+    NearObjects objects;
+
+    int sectorsCount = 8;
+    float radianStep = 3.14 / (float)sectorsCount;
+
+    float x0,y0,x,y;
+    x0 = ant->getPosition().x();
+    y0 = ant->getPosition().y();
+
+    QPolygonF antPolygon;
+
+    for (int i = 0; i < sectorsCount; i++) {
+        float rad = i * radianStep;
+        x = x0 + _antLookingRadius * cos(rad);
+        y = y0 + _antLookingRadius * sin(rad);
+        antPolygon << QPointF(x,y);
+    }
+
+    objects.ants = antsNearAntPolygon(antPolygon);
+    objects.foods = foodPositionsNearAntPolygon(antPolygon);
+    objects.barriers = barriersNearAntPolygon(antPolygon);
+
+    return objects;
+}
+
+QVector<QPolygonF> Map::barriersNearAntPolygon(QPolygonF &antPolygon)
+{
+    QVector<QPolygonF> nearBarriers;
+
+    foreach (QPolygonF barrier, _barrierPostions) {
+        if (!(barrier.intersected(antPolygon)).isEmpty()) {
+            nearBarriers << barrier;
+        }
+    }
+
+    return nearBarriers;
+}
+
+QVector<QPointF> Map::foodPositionsNearAntPolygon(QPolygonF &antPolygon)
+{
+    QVector<QPointF> nearFood;
+
+    foreach (QPointF foodPos, _foodPositions) {
+        if (antPolygon.containsPoint(foodPos,Qt::OddEvenFill)) {
+            nearFood << foodPos;
+        }
+    }
+
+    return nearFood;
+}
+
+QVector<Client *> Map::antsNearAntPolygon(QPolygonF &antPolygon)
+{
+    QVector<Client *> nearAnts;
+
+    foreach (Client *ant, _serv->_clients) {
+        if (antPolygon.containsPoint(ant->getPosition(),Qt::OddEvenFill)) {
+            nearAnts << ant;
+        }
+    }
+
+    return nearAnts;
+}
+
+// private methods
 
 void Map::setupFoods()
 {
@@ -106,38 +204,37 @@ void Map::setupFoods()
 
 void Map::setupBarriers()
 {
-    QList<QPointF> barrier1;
-    barrier1.append(QPointF(0.15,0.52));
-    barrier1.append(QPointF(0.43,0.48));
-    barrier1.append(QPointF(0.50,0.19));
-    barrier1.append(QPointF(0.30,0.21));
+    QPolygonF barrier1;
+    barrier1 << QPointF(0.15,0.52);
+    barrier1 << QPointF(0.43,0.48);
+    barrier1 << QPointF(0.50,0.19);
+    barrier1 << QPointF(0.30,0.21);
 
-    QList<QPointF> barrier2;
-    barrier2.append(QPointF(0.61,0.29));
-    barrier2.append(QPointF(0.60,0.55));
-    barrier2.append(QPointF(0.75,0.61));
-    barrier2.append(QPointF(0.70,0.35));
-    barrier2.append(QPointF(0.73,0.36));
-    barrier2.append(QPointF(0.69,0.15));
+    QPolygonF barrier2;
+    barrier2 << QPointF(0.61,0.29);
+    barrier2 << QPointF(0.60,0.55);
+    barrier2 << QPointF(0.75,0.61);
+    barrier2 << QPointF(0.70,0.35);
+    barrier2 << QPointF(0.73,0.36);
+    barrier2 << QPointF(0.69,0.15);
 
-    QList<QPointF> barrier3;
-    barrier3.append(QPointF(0.32,0.59));
-    barrier3.append(QPointF(0.10,0.75));
-    barrier3.append(QPointF(0.29,0.81));
-    barrier3.append(QPointF(0.40,0.78   ));
-    barrier3.append(QPointF(0.42,0.61));
+    QPolygonF barrier3;
+    barrier3 << QPointF(0.32,0.59);
+    barrier3 << QPointF(0.10,0.75);
+    barrier3 << QPointF(0.29,0.81);
+    barrier3 << QPointF(0.40,0.78);
+    barrier3 << QPointF(0.42,0.61);
 
     _barrierPostions.append(barrier1);
     _barrierPostions.append(barrier2);
     _barrierPostions.append(barrier3);
-
 }
 
 void Map::drawBorder()
 {
     qglColor(Qt::black);
 
-    float offset = antStep();
+    float offset = 0;
 
     glBegin(GL_LINE_LOOP);
     glVertex2f(-offset,1+offset);
@@ -176,7 +273,7 @@ void Map::drawAnts()
         foreach (Client *ant, ants) {
             QPointF position = ant->getPosition();
             QPointF direction = ant->getDircetion();
-            QPointF position2 = position + direction * antStep();
+            QPointF position2 = position - direction * _antStep;
 
             glVertex2f(position.x(),position.y());
             glVertex2f(position2.x(),position2.y());
@@ -204,7 +301,7 @@ void Map::drawBarries()
 {
     qglColor(Qt::darkGray);
 
-    foreach (QList<QPointF> barrier, _barrierPostions) {
+    foreach (QPolygonF barrier, _barrierPostions) {
         glBegin(GL_LINE_LOOP);
         {
             foreach (QPointF point, barrier) {

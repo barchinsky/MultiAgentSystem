@@ -16,6 +16,7 @@ class Server : public QTcpServer
 private:
     QTcpSocket *_sok;
     QList<Client *> _clients;
+    Map *_map;
     QByteArray array;
 
     QByteArray parseJSONwithKeyAndObject(Client *ant,QString, QJsonObject);
@@ -28,7 +29,7 @@ protected:
     void incomingConnection(qintptr handle);
 
 public:
-    explicit Server(QObject *parent = 0);
+    explicit Server( Map *map, QObject *parent = 0);
     bool doStartServer(QHostAddress addr, qint16 port);
 
     void parseDataFromClient(Client *,QByteArray);
