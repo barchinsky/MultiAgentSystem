@@ -13,10 +13,11 @@ if [ $1 -eq 0 ]; then
     exit 0
 fi
 
+DIR='logs/'
 LOG='mylog'
 for (( i = 1 ; i <= $1 ; i++ ))
 do
-    python Ant.py >> $LOG$i 2<&1 &
+    python Ant.py >> $DIR$LOG$i 2<&1 &
     pid=$!
     PIDS[${#PIDS[*]}]=$pid
     #myarr[${#myarr[*]}]=”$newitem”
