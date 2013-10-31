@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo You try to start $1 Ant client
+echo You try to start $1 instance of Ant client.
 
 if [ $# -eq 0 ]
   then
@@ -24,4 +24,13 @@ do
     echo $pid status $?
 done
 
-echo ${PIDS[*]}
+read command
+echo comand: $command
+
+# kill all running clients
+if [ $command == kill ]; then
+    echo ${PIDS[*]}
+    echo are going to be killed...
+    kill ${PIDS[*]}
+    echo All processes have been successfully killed or they were finished before this action.
+fi
