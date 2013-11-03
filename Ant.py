@@ -11,9 +11,30 @@ import random
 
 sys.path.append('templates')
 from templates import *
+import threading
 
-class Ant:
+class Server(threading.Thread):
+    def __init__(self):
+        super(Server,self).__init__()
+        self.host = 'localhost'
+        self.port = 65002
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def run(self):
+        self.socket.bind((self.host,self.port))
+        self.socket.listen(1)
+        conn, addr = self.socket.accept()
+        while True:
+            data = conn.recv(1024)
+            print data
+            
+        conn.close()
+
+
+class Ant(threading.Thread):
     def __init__(self,exteranl_id):
+        super(Ant,self).__init__()
         self._config=ConfigParser.RawConfigParser()
         self._config.read('conf/config.conf')
         self._host=self._config.get("Ant","host")
@@ -26,14 +47,19 @@ class Ant:
         self._pos_x=0
         self._pos_y=0
 
-        self._passed_way_to_resource=[] #array of passed way (x,y) coordinate to resource dislocation
+        self._passed_way=[] # array of passed way (x,y) coordinate to resource dislocation
+        self._success_way=[] # keep all successful ways
 
+        self.server = Server()
+ 
     def connect(self,host,port):
+        print "Connecting..."
         try:
             self.client_socket.connect((host,port)) # connect to host
+            print "Connected."
         except Exception,e:
-            print self._external_id
-            print e
+            print "Connection failed:",str(e)
+            
             sys.exit()
 
     def disconnect(self):
@@ -52,20 +78,20 @@ class Ant:
         '''
         Send data to server
         '''
-        print "%s:send::Query to send:%s"%(self._external_id,query)
+        print "send::Query to send:%s"%query
 
         try:
             self.client_socket.sendall(query.encode('utf-8'))
-            print "%s:send::Data sended."%self._external_id
+            print "send::Data sended."
             response = self.client_socket.recv(1024)
-            print "%s:send::Response goted."%self._external_id
+            print "send::Response goted."
 
             if response:
                 self.process_response(response)
             else:
                 print "send::No response goted."
         except Exception,e:
-            print e
+            print "send::"+str(e)
 
     def process_response(self,response):
         '''
@@ -88,11 +114,19 @@ class Ant:
             print "process_response::New coordinates goted:",x,y
             self._pos_x=x
             self._pos_y=y
-            self._passed_way_to_resource.append((x,y))
+            self._passed_way.append((x,y))
         elif api_key == "ERROR":
             print "process_response::Error section found."
-        elif api_key == "nearest_object":
-            pass
+        elif api_key == "nearest_objects":
+            print "Nearest object response goted.\n"
+            barriers = j["OBJECT"]["BARRIERS"]
+            objects = j["OBJECT"]
+            foods = j["OBJECT"]["FOODS"]
+            print 10*"-",barriers, objects, foods, 10*"-"
+            if foods:
+                self._success_way.append(self._passed_way)
+                raw_input("Continue?")
+                pass
 
     def create_reg_query(self,ant_id):
         '''
@@ -109,7 +143,12 @@ class Ant:
         return json.dumps(query)
 
     def create_get_nearest_object_query(self):
-        query={"API_KEY":"nearest_objects","OBJECT":{"COORD":[self._pos_x,self._pos_y],"VISION_RANGE":0.05}}
+        '''
+        Create query for retrieving list of nearest objects.
+        '''
+        #query={"API_KEY":"nearest_objects","OBJECT":{"COORD":[self._pos_x,self._pos_y],"VISION_RANGE":0.05}}
+        print  "Get nearest object request sended."
+        query={"API_KEY":"nearest_objects","OBJECT":{}}
         return json.dumps(query)
 
     def get_possible_direction(self):
@@ -118,8 +157,9 @@ class Ant:
         posible_way - array of possible moving directions
         '''
         rad = random.randint(0,360)
-        vector_x = math.cos(rad/K)
-        vector_y = math.sin(rad/K)
+
+        vector_x = math.cos(K*180/4)
+        vector_y = math.sin(K*180/4)
         self.send(self.create_is_ant_can_move_query(vector_x, vector_y))
 
     def move(self):
@@ -151,12 +191,18 @@ class Ant:
         self.register()
         while True:
             self.move()
+            self.send(self.create_get_nearest_object_query())
             print "live::I'm alive!"
-            time.sleep(0.1)
+            time.sleep(1)
+
+    def run(self):
+        self.server.start()
+        self.live()
 
 
 # /////////////////////// DEBUG ZONE ///////////////////////////
 if __name__=='__main__':
     test_ant = Ant(0)
-    
-    test_ant.live()
+    #test_ant.live()
+    test_ant.start()
+    test_ant.join()
