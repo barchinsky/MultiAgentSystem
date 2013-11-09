@@ -43,7 +43,7 @@ class Server(threading.Thread):
         return port
 
     def get_socket(self):
-        return str(self.host)+':'+str(self._port)
+        return str(self._host)+':'+str(self._port)
 
 
 class Ant(threading.Thread):
@@ -68,6 +68,14 @@ class Ant(threading.Thread):
         self.ping_server(self._client_host,self._port) # stop main thread if host unreachable
 
         self.server = Server(self._server_host)
+
+
+        ###################################
+        '''self method debug zone'''
+        #self.register()
+
+        ###################################
+
  
     def ping_server(self,host,port):
         '''
@@ -163,7 +171,7 @@ class Ant(threading.Thread):
         '''
         Create registration query.
         '''
-        query={"API_KEY":"registration","OBJECT":{self.server.get_socket()}}
+        query={"API_KEY":"registration","OBJECT":{"SOCKET":self.server.get_socket()}}
         return json.dumps(query)
 
     def create_is_ant_can_move_query(self,vector_x,vector_y):
