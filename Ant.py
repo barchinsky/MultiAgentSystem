@@ -14,15 +14,17 @@ from templates import *
 import threading
 
 class Server(threading.Thread):
-    def __init__(self):
+    def __init__(self,host):
+        print "And server initilized..."
         super(Server,self).__init__()
-        self.host = 'localhost'
-        self.port = 65002
+        self._host = host
+        self._port = self.get_unused_port()
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def run(self):
-        self.socket.bind((self.host,self.port))
+        print "Ant server running..."
+        self.socket.bind((self._host,self._port))
         self.socket.listen(1)
         conn, addr = self.socket.accept()
         while True:
@@ -31,14 +33,27 @@ class Server(threading.Thread):
             
         conn.close()
 
+    def get_unused_port(self):
+        print "AntServer::Loking for free port..."
+        temp_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        temp_s.bind(('localhost', 0))
+        addr, port = temp_s.getsockname()
+        temp_s.close()
+        print "Port found:"+str(port)
+        return port
+
+    def get_socket(self):
+        return str(self.host)+':'+str(self._port)
+
 
 class Ant(threading.Thread):
     def __init__(self,exteranl_id):
         super(Ant,self).__init__()
         self._config=ConfigParser.RawConfigParser()
         self._config.read('conf/config.conf')
-        self._host=self._config.get("Ant","host")
+        self._client_host=self._config.get("Ant","host")
         self._port=self._config.getint("Ant","port")
+        self._server_host = self._config.get("Ant",'server_host')
         
         self.client_socket=socket.socket(socket.AF_INET,socket.SOCK_STREAM) # socket connects to anthell server
 
@@ -50,16 +65,32 @@ class Ant(threading.Thread):
         self._passed_way=[] # array of passed way (x,y) coordinate to resource dislocation
         self._success_way=[] # keep all successful ways
 
-        self.server = Server()
+        self.ping_server(self._client_host,self._port) # stop main thread if host unreachable
+
+        self.server = Server(self._server_host)
  
+    def ping_server(self,host,port):
+        '''
+        Break main thread if main server is down.
+        '''
+        try:
+            print "Ant::Loking for server..."
+            temp_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            temp_s.bind((host, port))
+            addr, port = temp_s.getsockname()
+            temp_s.close()
+            print "Ant::Main server alive."
+        except Exception,e:
+            print "Main server is unreachable. Exit main thread."
+            sys.exit()
+
     def connect(self,host,port):
-        print "Connecting..."
+        print "Ant connecting to main server..."
         try:
             self.client_socket.connect((host,port)) # connect to host
             print "Connected."
         except Exception,e:
             print "Connection failed:",str(e)
-            
             sys.exit()
 
     def disconnect(self):
@@ -132,7 +163,7 @@ class Ant(threading.Thread):
         '''
         Create registration query.
         '''
-        query={"API_KEY":"registration","OBJECT":{}}
+        query={"API_KEY":"registration","OBJECT":{self.server.get_socket()}}
         return json.dumps(query)
 
     def create_is_ant_can_move_query(self,vector_x,vector_y):
@@ -187,7 +218,7 @@ class Ant(threading.Thread):
         '''
         Main function, starts socket server and describes ant logic
         '''
-        self.connect(self._host,self._port)
+        self.connect(self._client_host,self._port)
         self.register()
         while True:
             self.move()
