@@ -15,11 +15,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         map.cpp \
     server.cpp \
-    client.cpp
+    client.cpp \
+    clover.cpp
 
 HEADERS  += map.h \
     server.h \
     client.h \
-    constants.h
+    constants.h \
+    clover.h
 
 FORMS    += map.ui

@@ -28,4 +28,11 @@ typedef enum {
     kObjectTypeBarrier
 } ObjectType;
 
+#define DEBUG
+#ifdef DEBUG
+        #define TRACE qDebug
+#else
+        #define TRACE(fmt,arg...) ((void)0)
+#endif
+
 #endif // CONSTANTS_H

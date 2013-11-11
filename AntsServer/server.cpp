@@ -95,24 +95,10 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
                 double vectorLength = qSqrt(qPow(x,2) + qPow(y,2));
 
 
-                if (vectorLength <= 1.0) {
-                    //QPointF antPosition = ant->_position;
+                if (vectorLength <= 1.0) {                    
                     QPointF vector(x,y);
                     ant->_direction = vector;
-
                     ant->_position = _map->nextPositionForAnt(ant);
-                    /*
-                    QPointF newAntPosition = antPosition + vector*Map::antStep();
-
-                    QRect mapRect(0,0,100,100);
-                    QPoint intPoint((int)newAntPosition.x()*100,(int)newAntPosition.y()*100);
-                    if (!mapRect.contains(intPoint)) {
-                        newAntPosition = antPosition;
-                    } else {
-                        ant->_position = newAntPosition;
-                        ant->_direction = vector;
-                    }
-                    */
 
                     // create JSON
                     QJsonObject resultJSON;
@@ -146,10 +132,6 @@ QByteArray Server::getNearestObjects(Client *ant)
     QJsonObject mainObject;
 
     NearObjects nearObjects = _map->nearObjectsForAnt(ant);
-    qDebug()<<"ants "<<nearObjects.ants;
-    qDebug()<<"foods "<<nearObjects.foods;
-    qDebug()<<"barriers "<<nearObjects.barriers;
-
 
     QJsonArray antsArray;
     foreach (Client *client, nearObjects.ants) {
@@ -172,7 +154,7 @@ QByteArray Server::getNearestObjects(Client *ant)
 
 
     QJsonArray foodsArray;
-    foreach (QPointF foodPoint, nearObjects.foods) {
+    foreach (QPointF foodPoint, nearObjects.food) {
         QJsonArray coordsValue;
         coordsValue.push_back(QJsonValue(foodPoint.x()));
         coordsValue.push_back(QJsonValue(foodPoint.y()));
@@ -202,7 +184,7 @@ QByteArray Server::getNearestObjects(Client *ant)
 // public
 
 bool Server::doStartServer(QHostAddress addr, qint16 port)
-{
+{    
     if (!listen(addr, port))
     {
         qDebug() << "Server not started at" << addr << ":" << port;
@@ -215,7 +197,8 @@ bool Server::doStartServer(QHostAddress addr, qint16 port)
 void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 {
     QString str(byteArray);
-//    qDebug()<<"Client: "<<client->getID()<<"data: "<<str;
+    TRACE("parse Data from client %d", client->getID());
+    TRACE("%s",(char *)str.data());
 
     QJsonDocument d = QJsonDocument::fromJson(str.toUtf8());
 
@@ -245,20 +228,15 @@ void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 
 void Server::sendDataToClient(Client *client, QByteArray byteArray)
 {
+    TRACE("send Data To client %d", client->getID());
+    TRACE("%s",(char *)QString(byteArray).data());
     client->sendData(byteArray);
 }
 
 void Server::incomingConnection(qintptr handle)
 {
     Client *client = new Client(handle, this, this);
-
-    qDebug() << "Local: \n";
-    qDebug() << client->_socket->localAddress().toString();
-    qDebug() << client->_socket->localPort();
-
-    qDebug() << "Peer: \n";
-    qDebug() << client->_socket->peerAddress().toString();
-    qDebug() << client->_socket->peerPort();
+    TRACE("Connected client %d", client->getID());
 
     connect(client, SIGNAL(removeUser(Client*)), this, SLOT(onRemoveUser(Client*)));
 
@@ -271,6 +249,7 @@ void Server::incomingConnection(qintptr handle)
 
 void Server::onRemoveUser(Client *client)
 {
+    TRACE("Disconnected client %d", client->getID());
     _clients.removeAt(_clients.indexOf(client));
     emit onClientsCountChanged(_clients.count());
 }

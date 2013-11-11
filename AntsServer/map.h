@@ -12,9 +12,11 @@ namespace Ui {
 class Map;
 }
 
+
+
 typedef struct {
     QVector<Client *> ants;
-    QVector<QPointF> foods;
+    QPolygonF food;
     QVector<QPolygonF> barriers;
 } NearObjects;
 
@@ -37,7 +39,7 @@ public:
 
     NearObjects nearObjectsForAnt(Client *ant);
     QVector<QPolygonF> barriersNearAntPolygon(QPolygonF &antPolygon);
-    QVector<QPointF> foodPositionsNearAntPolygon(QPolygonF &antPolygon);
+    QPolygonF foodPositionsNearAntPolygon(QPolygonF &antPolygon);
     QVector<Client *> antsNearAntPolygon(QPolygonF &antPolygon);
 
 private:
@@ -49,10 +51,10 @@ private:
     float _antStep;
     float _antLookingRadius;
 
-    QList<QPointF> _foodPositions;
+    QPolygonF _foodPositions;
     QList<QPolygonF> _barrierPostions;
 
-    void setupFoods();
+    void setupFood();
     void setupBarriers();
 
     void drawBorder();
