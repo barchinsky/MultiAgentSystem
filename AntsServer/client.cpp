@@ -68,8 +68,6 @@ void Client::onError(QAbstractSocket::SocketError socketError) const
     case QAbstractSocket::RemoteHostClosedError:
         break;
     case QAbstractSocket::HostNotFoundError:
-
-
     case QAbstractSocket::ConnectionRefusedError:
 
     }

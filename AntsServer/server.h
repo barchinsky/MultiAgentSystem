@@ -6,6 +6,7 @@
 
 class Client;
 class QJsonObject;
+class QJsonValue;
 class Map;
 
 class Server : public QTcpServer
@@ -21,8 +22,13 @@ private:
 
     QByteArray parseJSONwithKeyAndObject(Client *ant,QString, QJsonObject);
     QByteArray getErrorJSONData();
-    QByteArray registerClient(Client *ant);
+    QByteArray registerClient(Client *ant, QJsonObject jsonObject);
     QByteArray isAntCanMove(Client *ant, QJsonObject vector);
+
+    bool getCoords(float *x, float *y, QJsonValue coordArray);
+    bool isRightDirection(float x, float y);
+    bool isRightDirection(float x0, float y0, float x1, float y1);
+
     QByteArray getNearestObjects(Client *ant);
 
 protected:

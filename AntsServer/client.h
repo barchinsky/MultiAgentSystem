@@ -17,14 +17,16 @@ private:
     QPointF _direction;
     QTcpSocket *_socket;
     QString _name;    
-    qint32 _clientID;
+    qint32 _clientID;    
 
 public:    
+    QString _socketForConnection;
+
     explicit Client(int desc, Server *serv, QObject *parent = 0);
 
     qint32 getID();
     QPointF getPosition();
-    QPointF getDircetion();
+    QPointF getDircetion();    
     void sendData(QByteArray);
 
 signals:

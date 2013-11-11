@@ -13,6 +13,8 @@
 #include "constants.h"
 #include "map.h"
 
+#include "helpmath.h"
+
 Server::Server(Map *map, QObject *parent) :
     QTcpServer(parent)
 {
@@ -24,7 +26,7 @@ Server::Server(Map *map, QObject *parent) :
 QByteArray Server::parseJSONwithKeyAndObject(Client *ant, QString key, QJsonObject obj)
 {
     if (key == kAPI_register) {
-        return registerClient(ant);
+        return registerClient(ant,obj);
     } else if (key == kAPI_is_ant_can_move) {
         return isAntCanMove(ant,obj);
     } else if (key == kAPI_nearest_objects) {
@@ -48,8 +50,17 @@ QByteArray Server::getErrorJSONData()
     return json.toJson();
 }
 
-QByteArray Server::registerClient(Client *ant)
+QByteArray Server::registerClient(Client *ant, QJsonObject jsonObject)
 {
+    // in JSON
+    if (jsonObject.contains(kJSON_SOCKET)) {
+        QJsonValue socketValue = jsonObject.value(kJSON_SOCKET);
+        if (socketValue.isString()) {
+            ant->_socketForConnection = socketValue.toString();
+        }
+    }
+
+    // out JSON
     QJsonObject coordJSON;
     coordJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_register));
 
@@ -79,49 +90,88 @@ QByteArray Server::registerClient(Client *ant)
 QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
 {
     QJsonValue vectorValue = vectorObject.value(kJSON_VECTOR);
-    if (vectorValue.isArray()) {
-        QJsonArray vectorArray = vectorValue.toArray();
+    QJsonValue nextCoordValue = vectorObject.value(kJSON_NEXT_COORD);
+
+    bool isCanMove = false;
+    float x,y;
+    QPointF direction;
+
+    if (getCoords(&x,&y,nextCoordValue)) {
+        float antX = ant->getPosition().x();
+        float antY = ant->getPosition().y();
+
+        if (isRightDirection(antX,antY,x,y)) {
+            isCanMove = true;
+            direction = Math::directionFromPointToPoint(antX,antY,x,y);
+        }
+
+    } else if (getCoords(&x,&y,vectorValue)) {
+        if (isRightDirection(x,y)) {
+            isCanMove = true;
+            direction = QPointF(x,y);
+        }
+    }
+
+    if (isCanMove) {
+        ant->_direction = direction;
+        QPointF previousPosition = ant->_position;
+        ant->_position = _map->nextPositionForAnt(ant);
+
+        // create JSON
+        QJsonObject resultJSON;
+        resultJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_is_ant_can_move));
+
+        if (previousPosition != ant->_position) {
+            QJsonArray coordArray;
+            coordArray.push_back(QJsonValue(ant->_position.x()));
+            coordArray.push_back(QJsonValue(ant->_position.y()));
+
+            QJsonObject ant_coord;
+            ant_coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
+
+            resultJSON.insert(kJSON_OBJECT,QJsonValue(ant_coord));
+        }
+
+        QJsonDocument json(resultJSON);
+
+        return json.toJson();
+    }
+
+    // if something wrong return error
+    return getErrorJSONData();
+}
+
+bool Server::getCoords(float *x, float *y, QJsonValue coordArray)
+{
+    if (coordArray.isArray()) {
+        QJsonArray vectorArray = coordArray.toArray();
 
         if (vectorArray.size() == 2) {
             QJsonValue coordValueX = vectorArray.at(0);
             QJsonValue coordValueY = vectorArray.at(1);
 
-
             if (coordValueX.isDouble() && coordValueY.isDouble()) {
-                double x,y;
-                x = coordValueX.toDouble();
-                y = coordValueY.toDouble();
-
-                double vectorLength = qSqrt(qPow(x,2) + qPow(y,2));
-
-
-                if (vectorLength <= 1.0) {                    
-                    QPointF vector(x,y);
-                    ant->_direction = vector;
-                    ant->_position = _map->nextPositionForAnt(ant);
-
-                    // create JSON
-                    QJsonObject resultJSON;
-                    resultJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_is_ant_can_move));
-
-                    QJsonArray coordArray;
-                    coordArray.push_back(QJsonValue(ant->_position.x()));
-                    coordArray.push_back(QJsonValue(ant->_position.y()));
-
-                    QJsonObject ant_coord;
-                    ant_coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
-
-                    resultJSON.insert(kJSON_OBJECT,QJsonValue(ant_coord));
-                    QJsonDocument json(resultJSON);
-
-                    return json.toJson();
-                }
+                *x = (float)coordValueX.toDouble();
+                *y = (float)coordValueY.toDouble();
+                return true;
             }
         }
     }
+    return false;
+}
 
-    // if something wrong return error
-    return getErrorJSONData();
+bool Server::isRightDirection(float x, float y)
+{
+    if (Math::length(x,y) > 1.0)
+        return false;
+    return true;
+}
+
+bool Server::isRightDirection(float x0, float y0, float x1, float y1)
+{
+    if (Math::length(x0,y0,x1,y1) > _map->getAntStep())
+        return false;
+    return true;
 }
 
 QByteArray Server::getNearestObjects(Client *ant)
@@ -143,10 +193,9 @@ QByteArray Server::getNearestObjects(Client *ant)
         coordsValue.push_back(QJsonValue(antPosition.y()));
         antObject.insert(kJSON_COORD,QJsonArray(coordsValue));
 
-        QString socketStr;
-        socketStr += client->_socket->peerAddress().toString();
-        socketStr += ":" + QString::number(client->_socket->peerPort());
-        antObject.insert(kJSON_SOCKET,QJsonValue(socketStr));
+        if (!client->_socketForConnection.isEmpty()) {
+            antObject.insert(kJSON_SOCKET,QJsonValue(client->_socketForConnection));
+        }
 
         antsArray.push_back(QJsonValue(antObject));
     }

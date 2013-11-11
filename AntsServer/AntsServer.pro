@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         map.cpp \
     server.cpp \
     client.cpp \
-    clover.cpp
+    clover.cpp \
+    helpmath.cpp
 
 HEADERS  += map.h \
     server.h \
     client.h \
     constants.h \
-    clover.h
+    clover.h \
+    helpmath.h
 
 FORMS    += map.ui

@@ -33,6 +33,7 @@ public:
     void paintGL(); // Метод для вывода изображения на экран
 
     static QPointF baseCoord();
+    float getAntStep();
 
     QPointF antBornPoint();
     QPointF nextPositionForAnt(Client *ant);

@@ -16,7 +16,7 @@ Map::Map(QWidget *parent) :
     ui->setupUi(this);
     _serv = new Server(this,this);
 
-    if (_serv->doStartServer(QHostAddress(QString("213.227.251.211")),16000)) {
+    if (_serv->doStartServer(QHostAddress(QString("192.168.2.8")),16000)) {
         qDebug()<<"connected";
         connect(_serv,SIGNAL(onClientsCountChanged(int)),this,SLOT(clientsCountChanged(int)));
 
@@ -74,7 +74,7 @@ void Map::resizeGL(int width, int height)
 
 void Map::paintGL()
 {
-    TRACE("GL Draw");
+   // TRACE("GL Draw");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // чистим буфер изображения и буфер глубины
     glLoadIdentity();
 
@@ -98,6 +98,11 @@ QPointF Map::baseCoord()
 }
 
 // public methods
+
+float Map::getAntStep()
+{
+    return _antStep;
+}
 
 QPointF Map::antBornPoint()
 {
