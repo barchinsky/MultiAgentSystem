@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 '''
-    Study project for ant algorithm simulation using multiagent system.
+    Study project for multiagent system simulation using ant algorithm for defining logic of agents.
 
     @Author Barchynskyi Maksym gr 406
 '''
@@ -72,16 +72,16 @@ class Ant(threading.Thread):
         self._success_way=[] # keep all successful ways
         self._success_way_distance=0
 
-        self._direction_angel = 0 # direction angel, using for defining direction in get_possible_direction()
+        self._direction_angel = 180 # direction angel, using for defining direction in get_possible_direction()
 
         self._is_moving_back = False # True if move back to base
 
-        #self.ping_server(self._client_host,self._port) # stop main thread if host unreachable
+        self.ping_server(self._server_host,self._port) # stop main thread if host unreachable
 
         #self.server = Servero(self._server_host)
 
         self.server_thread = threading.Thread(target=self.server)
-        self.client_thread = threadin.Thread(target=self.live)
+        self.client_thread = threading.Thread(target=self.live)
 
 
         ###################################
@@ -121,8 +121,6 @@ class Ant(threading.Thread):
         print "Port found:"+str(port)
         return port
 
-
- 
     def ping_server(self,host,port):
         '''
         Break main thread if main server is down.
@@ -168,7 +166,8 @@ class Ant(threading.Thread):
             self.client_socket.sendall(query.encode('utf-8'))
             print "send::Data sended."
             response = self.client_socket.recv(1024)
-            print "send::Response goted."
+            print "send::Response goted:", response
+            
 
             if response:
                 self.process_response(response)
@@ -194,9 +193,11 @@ class Ant(threading.Thread):
 
         elif api_key == "is_ant_can_move":
             print "process_response::Is ant can move method called."
-            x,y = j["OBJECT"]["COORD_ANT"]
+            if j["OBJECT"].items() != 0 :
+                x,y = j["OBJECT"]["COORD_ANT"]
+                print "X,Y",x,y
 
-            if x and y:
+            #if x and y:
                 print "process_response::New coordinates goted:",x,y
                 self._pos_x=x
                 self._pos_y=y
@@ -206,7 +207,8 @@ class Ant(threading.Thread):
                 self._direction_angel = self._direction_angel - 15
         elif api_key == "ERROR":
             print "process_response::Error section found."
-        elif api_key == "nearest_objects":
+        
+        if api_key == "nearest_objects":
             print "Nearest object response goted.\n"
             barriers = j["OBJECT"]["BARRIERS"]
             objects = j["OBJECT"]
@@ -224,8 +226,11 @@ class Ant(threading.Thread):
         '''
         Create registration query.
         '''
-        query={"API_KEY":"registration","OBJECT":{"SOCKET":self.server.get_socket()}}
+        query={"API_KEY":"registration","OBJECT":{"SOCKET":self.get_socket()}}
         return json.dumps(query)
+
+    def get_socket(self):
+        return str(self._server_host)+':'+str(self._port)
 
     def create_is_ant_can_move_query(self,vector_x,vector_y):
         '''
@@ -250,15 +255,15 @@ class Ant(threading.Thread):
         query={"API_KEY":"nearest_objects","OBJECT":{}}
         return json.dumps(query)
 
-    def get_possible_direction(self,angel=180):
+    def get_possible_direction(self):
         '''
         Retrive data from server about possible way
         posible_way - array of possible moving directions
         '''
         rad = random.randint(0,360)
 
-        vector_x = math.cos(K*angel/4)
-        vector_y = math.sin(K*angel/4)
+        vector_x = math.cos(K*self._direction_angel/4)
+        vector_y = math.sin(K*self._direction_angel/4)
         self.send(self.create_is_ant_can_move_query(vector_x, vector_y))
 
     def move(self):
@@ -327,14 +332,11 @@ class Ant(threading.Thread):
         return way_len
 
     def run(self):
-        self.server_thread.start()
-        self.server_thread.join()
+        #self.server_thread.start()
+        #self.server_thread.join()
 
         self.client_thread.start()
         self.client_thread.join()
-
-
-
 
 # /////////////////////// DEBUG ZONE ///////////////////////////
 if __name__=='__main__':
