@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+'''
+    Study project for ant algorithm simulation using multiagent system.
+
+    @Author Barchynskyi Maksym gr 406
+'''
+
 import socket
 import ConfigParser
 import  time
@@ -64,10 +70,18 @@ class Ant(threading.Thread):
 
         self._passed_way=[] # array of passed way (x,y) coordinate to resource dislocation
         self._success_way=[] # keep all successful ways
+        self._success_way_distance=0
 
-        self.ping_server(self._client_host,self._port) # stop main thread if host unreachable
+        self._direction_angel = 0 # direction angel, using for defining direction in get_possible_direction()
 
-        self.server = Server(self._server_host)
+        self._is_moving_back = False # True if move back to base
+
+        #self.ping_server(self._client_host,self._port) # stop main thread if host unreachable
+
+        #self.server = Servero(self._server_host)
+
+        self.server_thread = threading.Thread(target=self.server)
+        self.client_thread = threadin.Thread(target=self.live)
 
 
         ###################################
@@ -75,6 +89,38 @@ class Ant(threading.Thread):
         #self.register()
 
         ###################################
+
+    def server(self):
+        print 'Server is working...'
+        server_host = self._server_host
+        server_port = self.get_unused_port()
+
+        try:
+            ssocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            ssocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            ssocket.bind((server_host,server_port))
+            ssocket.listen(1)
+            conn, addr = ssocket.accept()
+            while True:
+                data = conn.recv(1024)
+                print data
+                print 'client args:'+str(server_port)
+        except Exception,e:
+            print "Exception:"+str(e)
+            sys.exit()
+            
+        conn.close()
+
+    def get_unused_port(self):
+        print "AntServer::Loking for free port..."
+        temp_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        temp_s.bind(('localhost', 0))
+        addr, port = temp_s.getsockname()
+        temp_s.close()
+        print "Port found:"+str(port)
+        return port
+
 
  
     def ping_server(self,host,port):
@@ -106,11 +152,10 @@ class Ant(threading.Thread):
 
     def register(self):
         '''
-        Provide client registration
+        Send client registration query to Server.
         '''
         reg_query = self.create_reg_query(self._id)
         print "register::Registration query:",reg_query
-
         self.send(reg_query)
         
     def send(self,query):
@@ -150,10 +195,15 @@ class Ant(threading.Thread):
         elif api_key == "is_ant_can_move":
             print "process_response::Is ant can move method called."
             x,y = j["OBJECT"]["COORD_ANT"]
-            print "process_response::New coordinates goted:",x,y
-            self._pos_x=x
-            self._pos_y=y
-            self._passed_way.append((x,y))
+
+            if x and y:
+                print "process_response::New coordinates goted:",x,y
+                self._pos_x=x
+                self._pos_y=y
+                self._passed_way.append((x,y))
+            else:
+                print "Can't move with last direction... Choose another direction.",x,y
+                self._direction_angel = self._direction_angel - 15
         elif api_key == "ERROR":
             print "process_response::Error section found."
         elif api_key == "nearest_objects":
@@ -161,9 +211,12 @@ class Ant(threading.Thread):
             barriers = j["OBJECT"]["BARRIERS"]
             objects = j["OBJECT"]
             foods = j["OBJECT"]["FOODS"]
-            print 10*"-",barriers, objects, foods, 10*"-"
+            print 10*"-",barriers, foods, 10*"-"
             if foods:
                 self._success_way.append(self._passed_way)
+                self._success_way_distance = self.find_way_length( self._passed_way )
+
+                self._is_moving_back = True
                 raw_input("Continue?")
                 pass
 
@@ -181,6 +234,13 @@ class Ant(threading.Thread):
         query={"API_KEY":"is_ant_can_move","OBJECT":{"VECTOR":[vector_x,vector_y]} }
         return json.dumps(query)
 
+    def create_is_ant_can_move_query_using_coords(self,coord_x,coord_y):
+        '''
+        Generate json is_ant_can_move query.
+        '''
+        query={"API_KEY":"is_ant_can_move","OBJECT":{"NEXT_COORD":[coord_x,coord_y]} }
+        return json.dumps(query)
+
     def create_get_nearest_object_query(self):
         '''
         Create query for retrieving list of nearest objects.
@@ -190,15 +250,15 @@ class Ant(threading.Thread):
         query={"API_KEY":"nearest_objects","OBJECT":{}}
         return json.dumps(query)
 
-    def get_possible_direction(self):
+    def get_possible_direction(self,angel=180):
         '''
         Retrive data from server about possible way
         posible_way - array of possible moving directions
         '''
         rad = random.randint(0,360)
 
-        vector_x = math.cos(K*180/4)
-        vector_y = math.sin(K*180/4)
+        vector_x = math.cos(K*angel/4)
+        vector_y = math.sin(K*angel/4)
         self.send(self.create_is_ant_can_move_query(vector_x, vector_y))
 
     def move(self):
@@ -229,14 +289,51 @@ class Ant(threading.Thread):
         self.connect(self._client_host,self._port)
         self.register()
         while True:
-            self.move()
-            self.send(self.create_get_nearest_object_query())
-            print "live::I'm alive!"
-            time.sleep(1)
+            if not self._is_moving_back:
+                self.move()
+                self.send(self.create_get_nearest_object_query())
+                print "live::I'm alive!"
+                time.sleep(1)
+            else:
+                self.go_home(self.passed_way,1)
+
+    def go_home(self, passed_way,sleep_time):
+        '''
+        Return home using coords from self.passed_way.
+        '''
+        print "Returning home..."
+        for i in range(len(passed_way)-1,0):
+            print passed_way[i]
+            x,y = passed_way[i]
+            print "Current coords:(%s,%s)"%(x,y)
+            self.send( self.create_is_ant_can_move_query_using_coords(x,y) )
+
+            time.sleep(sleep_time)
+
+        self._is_moving_back = False
+        pass
+
+    def find_way_length(way):
+        '''
+        Find way length.
+        '''
+        way_len = 0
+        for i in xrange(len(way)-1):
+            cur_point = way[i]
+            next_point = way[i+1]
+            print cur_point,next_point
+            way_len += math.sqrt(pow(next_point[0]-cur_point[0],2)+pow(next_point[1]-cur_point[1],2))
+        print way_len
+        return way_len
 
     def run(self):
-        self.server.start()
-        self.live()
+        self.server_thread.start()
+        self.server_thread.join()
+
+        self.client_thread.start()
+        self.client_thread.join()
+
+
 
 
 # /////////////////////// DEBUG ZONE ///////////////////////////
