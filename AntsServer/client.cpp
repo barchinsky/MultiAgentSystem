@@ -17,8 +17,8 @@ Client::Client(int handle, Server *serv, QObject *parent):
     _position = QPointF(0,0);
     _direction = QPointF(0,1);
 
-    _ant = new Ant(_position,0.5);
-    connect(this, SIGNAL(antPositionChanged(QPointF,QPointF)),_ant,SLOT(positionChanged(QPointF,QPointF)));
+    _ant = new Ant(_position,0.025);
+    connect(this, SIGNAL(antPositionChanged(QPointF,QPointF)),_ant,SLOT(onPositionChanged(QPointF,QPointF)));
 
     _socket = new QTcpSocket(this);
     _socket->setSocketDescriptor(handle);
@@ -61,6 +61,7 @@ void Client::setPositionAndDirection(QPointF newPosition, QPointF newDirection)
 {
     _position = newPosition;
     _direction = newDirection;
+    qDebug() << "position changed in client";
     emit antPositionChanged(_position,_direction);
 }
 

@@ -17,7 +17,7 @@ Map::Map(QWidget *parent) :
     ui->setupUi(this);
     _serv = new Server(this,this);
 
-    if (_serv->doStartServer(QHostAddress(QString("213.227.251.211")),9000)) {
+    if (_serv->doStartServer(QHostAddress(QString("127.0.0.1")),9000)) {
         qDebug()<<"connected";
         connect(_serv,SIGNAL(onClientsCountChanged(int)),this,SLOT(clientsCountChanged(int)));
 
@@ -292,8 +292,8 @@ void Map::drawAnts()
     foreach (Client *ant, ants) {
         glBegin(GL_LINE_LOOP);
         {
-            foreach (QPointF foodPoint, ant->getAntShape()) {
-                glVertex2f(foodPoint.x(),foodPoint.y());
+            foreach (QPointF point, ant->getAntShape()) {
+                glVertex2f(point.x(),point.y());
             }
         }
     }

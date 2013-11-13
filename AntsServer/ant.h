@@ -7,11 +7,12 @@
 
 class Ant : public QObject
 {
+    Q_OBJECT
 private:
     float _direction;
     float _previusDirection;
     float _scale;
-    QPointF _center;
+    QPointF _center,_previusCenter;
     QPolygonF _shape;
 
     QPolygonF baseShape();
@@ -22,7 +23,7 @@ public:
     QPolygonF getShape();
 
 public slots:
-    void positionChanged(QPointF center,QPointF vector);
+    void onPositionChanged(QPointF center,QPointF vector);
 
 };
 
