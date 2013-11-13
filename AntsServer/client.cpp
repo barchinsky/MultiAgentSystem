@@ -2,6 +2,10 @@
 
 #include "client.h"
 #include "server.h"
+#include "ant.h"
+
+#include <QPolygonF>
+#include <QPointF>
 
 
 
@@ -13,6 +17,9 @@ Client::Client(int handle, Server *serv, QObject *parent):
     _position = QPointF(0,0);
     _direction = QPointF(0,1);
 
+    _ant = new Ant(_position,0.5);
+    connect(this, SIGNAL(antPositionChanged(QPointF,QPointF)),_ant,SLOT(positionChanged(QPointF,QPointF)));
+
     _socket = new QTcpSocket(this);
     _socket->setSocketDescriptor(handle);
 
@@ -22,6 +29,12 @@ Client::Client(int handle, Server *serv, QObject *parent):
     connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
 
     qDebug() << "Client connected " << handle;
+}
+
+Client::~Client()
+{
+    delete[] _socket;
+    delete[] _ant;
 }
 
 qint32 Client::getID()
@@ -37,6 +50,18 @@ QPointF Client::getPosition()
 QPointF Client::getDircetion()
 {
     return _direction;
+}
+
+QPolygonF Client::getAntShape()
+{
+    return _ant->getShape();
+}
+
+void Client::setPositionAndDirection(QPointF newPosition, QPointF newDirection)
+{
+    _position = newPosition;
+    _direction = newDirection;
+    emit antPositionChanged(_position,_direction);
 }
 
 void Client::sendData(QByteArray dataArray)

@@ -7,6 +7,7 @@
 #include "client.h"
 #include "constants.h"
 #include "clover.h"
+#include "ant.h"
 
 
 Map::Map(QWidget *parent) :
@@ -16,7 +17,7 @@ Map::Map(QWidget *parent) :
     ui->setupUi(this);
     _serv = new Server(this,this);
 
-    if (_serv->doStartServer(QHostAddress(QString("192.168.2.8")),16000)) {
+    if (_serv->doStartServer(QHostAddress(QString("213.227.251.211")),9000)) {
         qDebug()<<"connected";
         connect(_serv,SIGNAL(onClientsCountChanged(int)),this,SLOT(clientsCountChanged(int)));
 
@@ -106,8 +107,13 @@ float Map::getAntStep()
 
 QPointF Map::antBornPoint()
 {
-    float x = rand()%20 / 100.0;
-    float y = rand()%20 / 100.0;
+    float x0 = baseCoord().x();
+    float y0 = baseCoord().y();
+    float degree = rand()%70 + 10;
+    float rad = degree * 0.01745329252; // degree * Pi / 180
+    float radius = _antStep * 5;
+    float x = x0 + radius * cos(rad);
+    float y = y0 + radius * sin(rad);
 
     QPointF bornPoint(x,y);
     return bornPoint;
@@ -283,18 +289,15 @@ void Map::drawAnts()
     qglColor(Qt::black);
     QList<Client *> ants = _serv->_clients;
 
-    glBegin(GL_LINES);
-    {
-        foreach (Client *ant, ants) {
-            QPointF position = ant->getPosition();
-            QPointF direction = ant->getDircetion();
-            QPointF position2 = position - direction * _antStep;
-
-            glVertex2f(position.x(),position.y());
-            glVertex2f(position2.x(),position2.y());
-        }     
+    foreach (Client *ant, ants) {
+        glBegin(GL_LINE_LOOP);
+        {
+            foreach (QPointF foodPoint, ant->getAntShape()) {
+                glVertex2f(foodPoint.x(),foodPoint.y());
+            }
+        }
     }
-    glEnd();    
+    glEnd();
 }
 
 
@@ -312,7 +315,7 @@ void Map::drawFood()
 
 void Map::drawBarries()
 {
-    qglColor(Qt::darkGray);
+    qglColor(Qt::black);
 
     foreach (QPolygonF barrier, _barrierPostions) {
         glBegin(GL_LINE_LOOP);

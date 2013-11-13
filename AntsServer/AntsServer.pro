@@ -17,13 +17,15 @@ SOURCES += main.cpp\
     server.cpp \
     client.cpp \
     clover.cpp \
-    helpmath.cpp
+    helpmath.cpp \
+    ant.cpp
 
 HEADERS  += map.h \
     server.h \
     client.h \
     constants.h \
     clover.h \
-    helpmath.h
+    helpmath.h \
+    ant.h
 
 FORMS    += map.ui

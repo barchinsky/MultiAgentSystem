@@ -6,6 +6,7 @@
 #include <qpoint.h>
 
 class Server;
+class Ant;
 
 class Client : public QObject
 {    
@@ -13,6 +14,7 @@ class Client : public QObject
     Q_OBJECT
 private:
     Server *_server;
+    Ant *_ant;
     QPointF _position;
     QPointF _direction;
     QTcpSocket *_socket;
@@ -23,14 +25,18 @@ public:
     QString _socketForConnection;
 
     explicit Client(int desc, Server *serv, QObject *parent = 0);
+    ~Client();
 
     qint32 getID();
     QPointF getPosition();
-    QPointF getDircetion();    
+    QPointF getDircetion();
+    QPolygonF getAntShape();
+    void setPositionAndDirection(QPointF newPosition, QPointF newDirection);
     void sendData(QByteArray);
 
 signals:
-    void removeUser(Client *);
+    void removeUser(Client *);    
+    void antPositionChanged(QPointF position, QPointF vector);
 
 public slots:
     void onConnect();

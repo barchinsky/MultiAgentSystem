@@ -64,11 +64,12 @@ QByteArray Server::registerClient(Client *ant, QJsonObject jsonObject)
     QJsonObject coordJSON;
     coordJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_register));
 
-    QJsonArray coordArray;    
-    ant->_position = _map->antBornPoint();
+    QJsonArray coordArray;        
+    QPointF position = _map->antBornPoint();
+    ant->setPositionAndDirection(position,QPointF(0,1));
 
-    coordArray.push_back(QJsonValue(ant->_position.x()));
-    coordArray.push_back(QJsonValue(ant->_position.y()));
+    coordArray.push_back(QJsonValue(position.x()));
+    coordArray.push_back(QJsonValue(position.y()));
 
     QJsonObject coord;
     coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
@@ -112,25 +113,26 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
         }
     }
 
-    if (isCanMove) {
-        ant->_direction = direction;
+    if (isCanMove) {        
         QPointF previousPosition = ant->_position;
-        ant->_position = _map->nextPositionForAnt(ant);
+        QPointF newPosition = _map->nextPositionForAnt(ant);
+
+        ant->setPositionAndDirection(newPosition,direction);
 
         // create JSON
         QJsonObject resultJSON;
         resultJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_is_ant_can_move));
 
-        if (previousPosition != ant->_position) {
+        QJsonObject ant_coord;
+
+        if (previousPosition != newPosition) {
             QJsonArray coordArray;
-            coordArray.push_back(QJsonValue(ant->_position.x()));
-            coordArray.push_back(QJsonValue(ant->_position.y()));
-
-            QJsonObject ant_coord;
+            coordArray.push_back(QJsonValue(newPosition.x()));
+            coordArray.push_back(QJsonValue(newPosition.y()));
             ant_coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
-
-            resultJSON.insert(kJSON_OBJECT,QJsonValue(ant_coord));
         }
+
+        resultJSON.insert(kJSON_OBJECT,QJsonValue(ant_coord));
 
         QJsonDocument json(resultJSON);
 
@@ -247,7 +249,7 @@ void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 {
     QString str(byteArray);
     TRACE("parse Data from client %d", client->getID());
-    TRACE("%s",(char *)str.data());
+     qDebug()<< str;
 
     QJsonDocument d = QJsonDocument::fromJson(str.toUtf8());
 
@@ -278,7 +280,7 @@ void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 void Server::sendDataToClient(Client *client, QByteArray byteArray)
 {
     TRACE("send Data To client %d", client->getID());
-    TRACE("%s",(char *)QString(byteArray).data());
+    qDebug()<< QString(byteArray);
     client->sendData(byteArray);
 }
 
