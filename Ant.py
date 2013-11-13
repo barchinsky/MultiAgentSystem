@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 '''
-    Study project for multiagent system simulation using ant algorithm for defining logic of agents.
+    Study project for ant algorithm simulation using multiagent system.
 
     @Author Barchynskyi Maksym gr 406
 '''
@@ -73,10 +73,11 @@ class Ant(threading.Thread):
         self._success_way_distance=0
 
         self._direction_angel = 180 # direction angel, using for defining direction in get_possible_direction()
+        self._last_success_direction = 180
 
         self._is_moving_back = False # True if move back to base
 
-        self.ping_server(self._server_host,self._port) # stop main thread if host unreachable
+        #self.ping_server(self._server_host,self._port) # stop main thread if host unreachable
 
         #self.server = Servero(self._server_host)
 
@@ -93,7 +94,7 @@ class Ant(threading.Thread):
     def server(self):
         print 'Server is working...'
         server_host = self._server_host
-        server_port = self.get_unused_port()
+        server_port = 65453#self.get_unused_port()
 
         try:
             ssocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -186,41 +187,47 @@ class Ant(threading.Thread):
 
         if api_key == "registration":
             print "Registration section found."
-            print j["OBJECT"]
  
             self._pos_x,self._pos_y = j["OBJECT"]["COORD_ANT"]
             print "Coordinates",self._pos_x, self._pos_y
 
-        elif api_key == "is_ant_can_move":
-            print "process_response::Is ant can move method called."
-            if j["OBJECT"].items() != 0 :
+        if api_key == "is_ant_can_move":
+            print "process_response::Is ant can move processing."
+            if len(j["OBJECT"].items()) > 0 :
+                print "**process_response::Ant can move. Set direction to 45 degree."
+                #self._direction_angel = 180
                 x,y = j["OBJECT"]["COORD_ANT"]
                 print "X,Y",x,y
 
-            #if x and y:
                 print "process_response::New coordinates goted:",x,y
                 self._pos_x=x
                 self._pos_y=y
                 self._passed_way.append((x,y))
             else:
-                print "Can't move with last direction... Choose another direction.",x,y
-                self._direction_angel = self._direction_angel - 15
-        elif api_key == "ERROR":
+                print "**process_response::Can't move with last direction... Choose another direction."
+                self._direction_angel -= 40
+                print "process_response::self.direction=%s"%str(abs(self._direction_angel))
+        if api_key == "ERROR":
             print "process_response::Error section found."
         
         if api_key == "nearest_objects":
             print "Nearest object response goted.\n"
-            barriers = j["OBJECT"]["BARRIERS"]
-            objects = j["OBJECT"]
-            foods = j["OBJECT"]["FOODS"]
-            print 10*"-",barriers, foods, 10*"-"
-            if foods:
-                self._success_way.append(self._passed_way)
-                self._success_way_distance = self.find_way_length( self._passed_way )
+            if len(j["OBJECT"].items()) > 0:
+                barriers = j["OBJECT"]["BARRIERS"]
+                objects = j["OBJECT"]
+                foods = j["OBJECT"]["FOODS"]
+                print 10*"-",barriers, foods, 10*"-"
+                print "-------------Foods--------------",foods
+                if foods:
+                    self._success_way.append(self._passed_way)
+                    self._success_way_distance = self.find_way_length( self._passed_way )
 
-                self._is_moving_back = True
-                raw_input("Continue?")
-                pass
+                    self._is_moving_back = True
+                    #raw_input("Continue?")
+                    print "*****************Food found!********************************"
+                else: pass
+            else:
+                print "No objects found. Go on..."
 
     def create_reg_query(self,ant_id):
         '''
@@ -261,9 +268,10 @@ class Ant(threading.Thread):
         posible_way - array of possible moving directions
         '''
         rad = random.randint(0,360)
+        print "get_posible_direction::self._direction_angel=%s"%str(abs(self._direction_angel))
 
-        vector_x = math.cos(K*self._direction_angel/4)
-        vector_y = math.sin(K*self._direction_angel/4)
+        vector_x = math.cos(K*abs(self._direction_angel)/4)
+        vector_y = math.sin(K*abs(self._direction_angel)/4)
         self.send(self.create_is_ant_can_move_query(vector_x, vector_y))
 
     def move(self):
@@ -298,27 +306,27 @@ class Ant(threading.Thread):
                 self.move()
                 self.send(self.create_get_nearest_object_query())
                 print "live::I'm alive!"
-                time.sleep(1)
+                time.sleep(0.1)
             else:
-                self.go_home(self.passed_way,1)
+                self.go_home()
 
-    def go_home(self, passed_way,sleep_time):
+    def go_home(self):
         '''
         Return home using coords from self.passed_way.
         '''
-        print "Returning home..."
-        for i in range(len(passed_way)-1,0):
-            print passed_way[i]
-            x,y = passed_way[i]
+        print "////////////////// Returning home...////////////////////////////"
+        for i in range(len(self._passed_way)-1,0,-1):
+            #print passed_way[i]
+            x,y = self._passed_way[i]
             print "Current coords:(%s,%s)"%(x,y)
             self.send( self.create_is_ant_can_move_query_using_coords(x,y) )
 
-            time.sleep(sleep_time)
+            time.sleep(0.1)
 
         self._is_moving_back = False
         pass
 
-    def find_way_length(way):
+    def find_way_length(self,way):
         '''
         Find way length.
         '''
@@ -326,17 +334,17 @@ class Ant(threading.Thread):
         for i in xrange(len(way)-1):
             cur_point = way[i]
             next_point = way[i+1]
-            print cur_point,next_point
+            #print cur_point,next_point
             way_len += math.sqrt(pow(next_point[0]-cur_point[0],2)+pow(next_point[1]-cur_point[1],2))
-        print way_len
+        #print way_len
         return way_len
 
     def run(self):
-        #self.server_thread.start()
-        #self.server_thread.join()
-
+        self.server_thread.start()
         self.client_thread.start()
+
         self.client_thread.join()
+        self.server_thread.join()
 
 # /////////////////////// DEBUG ZONE ///////////////////////////
 if __name__=='__main__':
