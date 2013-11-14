@@ -54,6 +54,7 @@ class Server(threading.Thread):
 
 class Ant(threading.Thread):
     def __init__(self,exteranl_id):
+        print "Ant::Init()"
         super(Ant,self).__init__()
         self._config=ConfigParser.RawConfigParser()
         self._config.read('conf/config.conf')
@@ -73,13 +74,10 @@ class Ant(threading.Thread):
         self._success_way_distance=0
 
         self._direction_angel = 180 # direction angel, using for defining direction in get_possible_direction()
-        self._last_success_direction = 180
 
         self._is_moving_back = False # True if move back to base
 
         #self.ping_server(self._server_host,self._port) # stop main thread if host unreachable
-
-        #self.server = Servero(self._server_host)
 
         self.server_thread = threading.Thread(target=self.server)
         self.client_thread = threading.Thread(target=self.live)
@@ -205,7 +203,7 @@ class Ant(threading.Thread):
                 self._passed_way.append((x,y))
             else:
                 print "**process_response::Can't move with last direction... Choose another direction."
-                self._direction_angel -= 40
+                self._direction_angel -= random.randint(40,60)
                 print "process_response::self.direction=%s"%str(abs(self._direction_angel))
         if api_key == "ERROR":
             print "process_response::Error section found."
