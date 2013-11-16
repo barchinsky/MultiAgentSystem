@@ -73,7 +73,7 @@ class Ant(threading.Thread):
         self._success_way=[] # keep all successful ways
         self._success_way_distance=0
 
-        self._direction_angel = 180 # direction angel, using for defining direction in get_possible_direction()
+        self._direction_angel = 180 + random.randint(-150,150)# direction angel, using for defining direction in get_possible_direction()
 
         self._is_moving_back = False # True if move back to base
 
@@ -92,7 +92,7 @@ class Ant(threading.Thread):
     def server(self):
         print 'Server is working...'
         server_host = self._server_host
-        server_port = 65453#self.get_unused_port()
+        server_port = self.get_unused_port()
 
         try:
             ssocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -203,7 +203,15 @@ class Ant(threading.Thread):
                 self._passed_way.append((x,y))
             else:
                 print "**process_response::Can't move with last direction... Choose another direction."
-                self._direction_angel -= random.randint(40,60)
+                self._direction_angel -= random.randint(-100,100)
+                predirection = random.uniform(-1,1)
+                if predirection == 0:
+                    predirection = -1
+
+                self._direction_angel -= random.randint(60,100)*predirection
+
+                print "self.direction_angel:",self._direction_angel
+
                 print "process_response::self.direction=%s"%str(abs(self._direction_angel))
         if api_key == "ERROR":
             print "process_response::Error section found."
@@ -214,15 +222,15 @@ class Ant(threading.Thread):
                 barriers = j["OBJECT"]["BARRIERS"]
                 objects = j["OBJECT"]
                 foods = j["OBJECT"]["FOODS"]
-                print 10*"-",barriers, foods, 10*"-"
-                print "-------------Foods--------------",foods
+                #print 10*"-",barriers, foods, 10*"-"
+                #print "-------------Foods--------------",foods
                 if foods:
                     self._success_way.append(self._passed_way)
                     self._success_way_distance = self.find_way_length( self._passed_way )
 
                     self._is_moving_back = True
                     #raw_input("Continue?")
-                    print "*****************Food found!********************************"
+                    print "process_responce::ff"
                 else: pass
             else:
                 print "No objects found. Go on..."
@@ -260,16 +268,25 @@ class Ant(threading.Thread):
         query={"API_KEY":"nearest_objects","OBJECT":{}}
         return json.dumps(query)
 
+    def create_get_found_way_reauest_querty(self):
+        query={"API_KEY":"get_found_way","OBJECT":{}}
+        return json.dumps(query)
+
+    def create_get_found_way_response_query(self):
+        query = {"API_KEY":"get_found_way"}
+
+
+
     def get_possible_direction(self):
         '''
         Retrive data from server about possible way
         posible_way - array of possible moving directions
         '''
         rad = random.randint(0,360)
-        print "get_posible_direction::self._direction_angel=%s"%str(abs(self._direction_angel))
+        print "get_posible_direction::self._direction_angel=%s"%str((self._direction_angel))
 
-        vector_x = math.cos(K*abs(self._direction_angel)/4)
-        vector_y = math.sin(K*abs(self._direction_angel)/4)
+        vector_x = math.cos(K*(self._direction_angel)/4)
+        vector_y = math.sin(K*(self._direction_angel)/4)
         self.send(self.create_is_ant_can_move_query(vector_x, vector_y))
 
     def move(self):
