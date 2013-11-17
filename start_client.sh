@@ -15,6 +15,11 @@ fi
 
 DIR='logs/'
 LOG='mylog'
+
+echo "Clearing last logs..."
+rm -v $DIR/*
+echo "Clearing finished."
+
 for (( i = 1 ; i <= $1 ; i++ ))
 do
     python Ant.py >> $DIR$LOG$i 2<&1 &
