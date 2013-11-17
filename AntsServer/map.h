@@ -42,7 +42,7 @@ public:
 
     NearObjects nearObjectsForAnt(Client *ant);
     QVector<QPolygonF> barriersNearAntPolygon(QPolygonF &antPolygon);
-    QPolygonF foodPositionsNearAntPolygon(QPolygonF &antPolygon);
+    QPolygonF foodPositionsNearAntPolygon(QPointF &checkPoint);
     QVector<Client *> antsNearAntPolygon(QPolygonF &antPolygon);
 
 private:

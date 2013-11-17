@@ -21,30 +21,36 @@ QPolygonF Ant::getShape()
     return _shape;
 }
 
+QPointF Ant::getMouthPosition()
+{
+    return _mouthPosition;
+}
+
 
 // slots
 void Ant::onPositionChanged(QPointF center, QPointF vector)
-{    
-    qDebug() << "before Ant::onPositionChanged vec:  "<< vector;
+{       
     _center = center;    
 
     float x = vector.x();
     float y = vector.y();
+
     float angleInTriangle = qAtan(y / x);
     float angleInRad = 0;
     if (x >= 0 && y >= 0) {
         angleInRad = angleInTriangle;
     } else if (x < 0 && y >= 0) {
-        angleInRad = M_PI - angleInTriangle;
+        angleInRad = M_PI + angleInTriangle;
     } else if (x < 0 && y < 0) {
         angleInRad = M_PI + angleInTriangle;
     } else if (x >= 0 && y < 0) {
-        angleInRad = -angleInTriangle;
+        angleInRad = angleInTriangle;
     }
 
-    _direction = angleInRad * 180 / M_PI;
-    qDebug() << "after Ant::onPositionChanged: vec:  "<< _direction;
+    _direction = angleInRad * 180 / M_PI - 90;
     setupShape();
+
+    _mouthPosition = _center + vector * _scale * 1.1;
 }
 
 // private
@@ -75,5 +81,5 @@ QPolygonF Ant::baseShape()
 
 void Ant::setupShape()
 {
-    _shape = Math::polygonForShape(_baseShape,_center,_scale,_direction);
+    _shape = Math::polygonForShape(_baseShape,_center,_scale,_direction);    
 }

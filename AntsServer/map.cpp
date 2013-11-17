@@ -120,14 +120,6 @@ float Map::getAntStep()
 
 QPointF Map::antBornPoint()
 {
-//    float x0 = baseCoord().x();
-//    float y0 = baseCoord().y();
-//    float degree = rand()%70 + 10;
-//    float rad = degree * 0.01745329252; // degree * Pi / 180
-//    float radius = _antStep * 5;
-//    float x = x0 + radius * cos(rad);
-//    float y = y0 + radius * sin(rad);
-
     float x = baseCoord().x();
     float y = baseCoord().y();
 
@@ -177,9 +169,12 @@ NearObjects Map::nearObjectsForAnt(Client *ant)
         antPolygon << QPointF(x,y);
     }
 
-    objects.ants = antsNearAntPolygon(antPolygon);
-    objects.food = foodPositionsNearAntPolygon(antPolygon);
+    objects.ants = antsNearAntPolygon(antPolygon);    
     objects.barriers = barriersNearAntPolygon(antPolygon);
+
+    QPointF antsMouthPosition = ant->getAntMouthPosition();
+
+    objects.food = foodPositionsNearAntPolygon(antsMouthPosition);
 
     return objects;
 }
@@ -197,12 +192,10 @@ QVector<QPolygonF> Map::barriersNearAntPolygon(QPolygonF &antPolygon)
     return nearBarriers;
 }
 
-QPolygonF Map::foodPositionsNearAntPolygon(QPolygonF &antPolygon)
+QPolygonF Map::foodPositionsNearAntPolygon(QPointF &checkPoint)
 {
-    foreach (QPointF foodPos, _foodPositions) {
-        if (antPolygon.containsPoint(foodPos,Qt::OddEvenFill)) {
-            return _foodPositions;
-        }
+    if (_foodPositions.containsPoint(checkPoint,Qt::OddEvenFill)) {
+        return _foodPositions;
     }
     return QPolygonF(0);
 }

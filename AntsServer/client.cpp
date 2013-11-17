@@ -59,6 +59,11 @@ QPolygonF Client::getAntShape()
     return _ant->getShape();
 }
 
+QPointF Client::getAntMouthPosition()
+{
+    return _ant->getMouthPosition();
+}
+
 void Client::setPositionAndDirection(QPointF newPosition, QPointF newDirection)
 {
     _position = newPosition;

@@ -31,6 +31,7 @@ public:
     QPointF getPosition();
     QPointF getDircetion();
     QPolygonF getAntShape();
+    QPointF getAntMouthPosition();
     void setPositionAndDirection(QPointF newPosition, QPointF newDirection);
     void sendData(QByteArray);
 

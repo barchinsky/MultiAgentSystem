@@ -12,6 +12,7 @@ private:
     float _direction;    
     float _scale;
     QPointF _center;
+    QPointF _mouthPosition;
     QPolygonF _shape;
     QPolygonF _baseShape;
 
@@ -21,6 +22,7 @@ private:
 public:    
     Ant(QPointF center, float scale = 1, float direction = 90.0, QObject *parent = 0);
     QPolygonF getShape();
+    QPointF getMouthPosition();
 
 public slots:
     void onPositionChanged(QPointF center,QPointF vector);
