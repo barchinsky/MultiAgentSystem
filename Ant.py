@@ -61,6 +61,7 @@ class Ant(threading.Thread):
         self._client_host=self._config.get("Ant","host")
         self._port=self._config.getint("Ant","port")
         self._server_host = self._config.get("Ant",'server_host')
+        self._sleep_time = self._config.getfloat("Ant","sleep")
         
         self.client_socket=socket.socket(socket.AF_INET,socket.SOCK_STREAM) # socket connects to anthell server
 
@@ -200,15 +201,14 @@ class Ant(threading.Thread):
                 print "process_response::New coordinates goted:",x,y
                 self._pos_x=x
                 self._pos_y=y
-                self._passed_way.append((x,y))
+                self._passed_way.append([x,y])
             else:
                 print "**process_response::Can't move with last direction... Choose another direction."
-                self._direction_angel -= random.randint(-100,100)
-                predirection = random.uniform(-1,1)
-                if predirection == 0:
-                    predirection = -1
+                direction = random.uniform(-1,1)
+                if direction == 0:
+                    direction = -1
 
-                self._direction_angel -= random.randint(60,100)*predirection
+                self._direction_angel -= random.randint(60,100)*direction
 
                 print "self.direction_angel:",self._direction_angel
 
@@ -222,16 +222,13 @@ class Ant(threading.Thread):
                 barriers = j["OBJECT"]["BARRIERS"]
                 objects = j["OBJECT"]
                 foods = j["OBJECT"]["FOODS"]
-                #print 10*"-",barriers, foods, 10*"-"
-                #print "-------------Foods--------------",foods
                 if foods:
                     self._success_way.append(self._passed_way)
                     self._success_way_distance = self.find_way_length( self._passed_way )
 
                     self._is_moving_back = True
-                    #raw_input("Continue?")
                     print "process_responce::ff"
-                else: pass
+                    #raw_input("Food found.")
             else:
                 print "No objects found. Go on..."
 
@@ -268,14 +265,14 @@ class Ant(threading.Thread):
         query={"API_KEY":"nearest_objects","OBJECT":{}}
         return json.dumps(query)
 
-    def create_get_found_way_reauest_querty(self):
+    def create_get_found_way_reauest_query(self):
         query={"API_KEY":"get_found_way","OBJECT":{}}
         return json.dumps(query)
 
     def create_get_found_way_response_query(self):
-        query = {"API_KEY":"get_found_way"}
-
-
+        query = {"API_KEY":"get_found_way","OBJECT":{ "WAY_LENGTH":self.find_way_length(), "WAY_COORDS": self.passed_way }}
+        print query
+        return json.dumps(query)
 
     def get_possible_direction(self):
         '''
@@ -321,7 +318,7 @@ class Ant(threading.Thread):
                 self.move()
                 self.send(self.create_get_nearest_object_query())
                 print "live::I'm alive!"
-                time.sleep(0.1)
+                time.sleep(self._sleep_time)
             else:
                 self.go_home()
 
@@ -329,17 +326,40 @@ class Ant(threading.Thread):
         '''
         Return home using coords from self.passed_way.
         '''
-        print "////////////////// Returning home...////////////////////////////"
+        print "go_home()"
         for i in range(len(self._passed_way)-1,0,-1):
             #print passed_way[i]
             x,y = self._passed_way[i]
             print "Current coords:(%s,%s)"%(x,y)
             self.send( self.create_is_ant_can_move_query_using_coords(x,y) )
 
-            time.sleep(0.1)
+            time.sleep(self._sleep_time)
 
         self._is_moving_back = False
+        print "End go_home()"
+        #raw_input("End go home?")
+        self.go_to_resource()
+
+    def go_to_resource(self):
+        '''
+        Go to resource using passed way.
+        '''
+        print "go_to_resource()"
+        for i in range(0,len(self._passed_way)-1):
+            #print passed_way[i]
+            x,y = self._passed_way[i]
+            print "Current coords:(%s,%s)"%(x,y)
+            self.send( self.create_is_ant_can_move_query_using_coords(x,y) )
+
+            time.sleep(self._sleep_time)
+
+        #self._is_moving_back = False
+        self.go_home()
+        print "End go_to_resource()"
+        #raw_input("End go to resource?")
         pass
+
+
 
     def find_way_length(self,way):
         '''
@@ -349,17 +369,15 @@ class Ant(threading.Thread):
         for i in xrange(len(way)-1):
             cur_point = way[i]
             next_point = way[i+1]
-            #print cur_point,next_point
             way_len += math.sqrt(pow(next_point[0]-cur_point[0],2)+pow(next_point[1]-cur_point[1],2))
-        #print way_len
         return way_len
 
     def run(self):
-        self.server_thread.start()
+        #self.server_thread.start()
         self.client_thread.start()
 
         self.client_thread.join()
-        self.server_thread.join()
+        #self.server_thread.join()
 
 # /////////////////////// DEBUG ZONE ///////////////////////////
 if __name__=='__main__':
