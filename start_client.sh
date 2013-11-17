@@ -33,7 +33,7 @@ read command
 echo comand: $command
 
 # kill all running clients
-if [ $command == kill ]; then
+if [ $command ]; then
     echo ${PIDS[*]}
     echo are going to be killed...
     kill ${PIDS[*]}
