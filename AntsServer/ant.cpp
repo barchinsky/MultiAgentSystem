@@ -27,7 +27,22 @@ void Ant::onPositionChanged(QPointF center, QPointF vector)
 {    
     qDebug() << "before Ant::onPositionChanged vec:  "<< vector;
     _center = center;    
-    _direction = (qAcos(vector.x()) * 180 / M_PI) - 90;
+
+    float x = vector.x();
+    float y = vector.y();
+    float angleInTriangle = qAtan(y / x);
+    float angleInRad = 0;
+    if (x >= 0 && y >= 0) {
+        angleInRad = angleInTriangle;
+    } else if (x < 0 && y >= 0) {
+        angleInRad = M_PI - angleInTriangle;
+    } else if (x < 0 && y < 0) {
+        angleInRad = M_PI + angleInTriangle;
+    } else if (x >= 0 && y < 0) {
+        angleInRad = -angleInTriangle;
+    }
+
+    _direction = angleInRad * 180 / M_PI;
     qDebug() << "after Ant::onPositionChanged: vec:  "<< _direction;
     setupShape();
 }
