@@ -3,11 +3,13 @@
 
 #include <QtNetwork/qtcpserver.h>
 #include <QtNetwork/qtcpsocket.h>
+#include <QPointF>
 
 class Client;
 class QJsonObject;
 class QJsonValue;
 class Map;
+
 
 class Server : public QTcpServer
 {
@@ -43,6 +45,7 @@ public:
 
 signals:
     void onClientsCountChanged(int);
+    void onClientDiedAtPoint(QPointF);
 
 public slots:
     void onRemoveUser(Client*);

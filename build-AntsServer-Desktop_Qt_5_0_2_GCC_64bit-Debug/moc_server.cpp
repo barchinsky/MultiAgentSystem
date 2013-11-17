@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_Server_t {
-    QByteArrayData data[5];
-    char stringdata[52];
+    QByteArrayData data[6];
+    char stringdata[72];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -32,11 +32,13 @@ static const qt_meta_stringdata_Server_t qt_meta_stringdata_Server = {
 QT_MOC_LITERAL(0, 0, 6),
 QT_MOC_LITERAL(1, 7, 21),
 QT_MOC_LITERAL(2, 29, 0),
-QT_MOC_LITERAL(3, 30, 12),
-QT_MOC_LITERAL(4, 43, 7)
+QT_MOC_LITERAL(3, 30, 19),
+QT_MOC_LITERAL(4, 50, 12),
+QT_MOC_LITERAL(5, 63, 7)
     },
     "Server\0onClientsCountChanged\0\0"
-    "onRemoveUser\0Client*\0"
+    "onClientDiedAtPoint\0onRemoveUser\0"
+    "Client*\0"
 };
 #undef QT_MOC_LITERAL
 
@@ -46,24 +48,26 @@ static const uint qt_meta_data_Server[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       2,   14, // methods
+       3,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-       1,       // signalCount
+       2,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   24,    2, 0x05,
+       1,    1,   29,    2, 0x05,
+       3,    1,   32,    2, 0x05,
 
  // slots: name, argc, parameters, tag, flags
-       3,    1,   27,    2, 0x0a,
+       4,    1,   35,    2, 0x0a,
 
  // signals: parameters
     QMetaType::Void, QMetaType::Int,    2,
+    QMetaType::Void, QMetaType::QPointF,    2,
 
  // slots: parameters
-    QMetaType::Void, 0x80000000 | 4,    2,
+    QMetaType::Void, 0x80000000 | 5,    2,
 
        0        // eod
 };
@@ -74,7 +78,8 @@ void Server::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         Server *_t = static_cast<Server *>(_o);
         switch (_id) {
         case 0: _t->onClientsCountChanged((*reinterpret_cast< int(*)>(_a[1]))); break;
-        case 1: _t->onRemoveUser((*reinterpret_cast< Client*(*)>(_a[1]))); break;
+        case 1: _t->onClientDiedAtPoint((*reinterpret_cast< QPointF(*)>(_a[1]))); break;
+        case 2: _t->onRemoveUser((*reinterpret_cast< Client*(*)>(_a[1]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -84,6 +89,12 @@ void Server::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
             typedef void (Server::*_t)(int );
             if (*reinterpret_cast<_t *>(func) == static_cast<_t>(&Server::onClientsCountChanged)) {
                 *result = 0;
+            }
+        }
+        {
+            typedef void (Server::*_t)(QPointF );
+            if (*reinterpret_cast<_t *>(func) == static_cast<_t>(&Server::onClientDiedAtPoint)) {
+                *result = 1;
             }
         }
     }
@@ -114,13 +125,13 @@ int Server::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 2)
+        if (_id < 3)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 3;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 2)
+        if (_id < 3)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 2;
+        _id -= 3;
     }
     return _id;
 }
@@ -130,5 +141,12 @@ void Server::onClientsCountChanged(int _t1)
 {
     void *_a[] = { 0, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
     QMetaObject::activate(this, &staticMetaObject, 0, _a);
+}
+
+// SIGNAL 1
+void Server::onClientDiedAtPoint(QPointF _t1)
+{
+    void *_a[] = { 0, const_cast<void*>(reinterpret_cast<const void*>(&_t1)) };
+    QMetaObject::activate(this, &staticMetaObject, 1, _a);
 }
 QT_END_MOC_NAMESPACE

@@ -7,7 +7,8 @@
 #include <qjsonobject.h>
 #include <qjsonvalue.h>
 
-#include <qrect.h>
+#include <QPointF>
+
 
 #include "client.h"
 #include "constants.h"
@@ -115,6 +116,7 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
 
     if (isCanMove) {        
         QPointF previousPosition = ant->_position;
+        ant->_direction = direction;
         QPointF newPosition = _map->nextPositionForAnt(ant);
 
         ant->setPositionAndDirection(newPosition,direction);
@@ -203,15 +205,8 @@ QByteArray Server::getNearestObjects(Client *ant)
     }
     mainObject.insert(kJSON_ANTS,QJsonValue(antsArray));
 
-
-    QJsonArray foodsArray;
-    foreach (QPointF foodPoint, nearObjects.food) {
-        QJsonArray coordsValue;
-        coordsValue.push_back(QJsonValue(foodPoint.x()));
-        coordsValue.push_back(QJsonValue(foodPoint.y()));
-        foodsArray.push_back(QJsonValue(coordsValue));
-    }
-    mainObject.insert(kJSON_FOODS,QJsonValue(foodsArray));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    bool isExistFood = nearObjects.food.count() != 0;
+    mainObject.insert(kJSON_FOODS,QJsonValue(isExistFood));
 
     QJsonArray barriersArray;
     foreach (QPolygonF polygon, nearObjects.barriers) {
@@ -248,8 +243,8 @@ bool Server::doStartServer(QHostAddress addr, qint16 port)
 void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 {
     QString str(byteArray);
-    TRACE("parse Data from client %d", client->getID());
-     qDebug()<< str;
+//    TRACE("parse Data from client %d", client->getID());
+//     qDebug()<< str;
 
     QJsonDocument d = QJsonDocument::fromJson(str.toUtf8());
 
@@ -279,8 +274,8 @@ void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 
 void Server::sendDataToClient(Client *client, QByteArray byteArray)
 {
-    TRACE("send Data To client %d", client->getID());
-    qDebug()<< QString(byteArray);
+//    TRACE("send Data To client %d", client->getID());
+//    qDebug()<< QString(byteArray);
     client->sendData(byteArray);
 }
 
@@ -303,6 +298,7 @@ void Server::onRemoveUser(Client *client)
     TRACE("Disconnected client %d", client->getID());
     _clients.removeAt(_clients.indexOf(client));
     emit onClientsCountChanged(_clients.count());
+    emit onClientDiedAtPoint(client->getPosition());
 }
 
 

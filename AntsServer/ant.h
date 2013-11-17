@@ -8,12 +8,12 @@
 class Ant : public QObject
 {
     Q_OBJECT
-private:
-    float _direction;
-    float _previusDirection;
+private:    
+    float _direction;    
     float _scale;
-    QPointF _center,_previusCenter;
+    QPointF _center;
     QPolygonF _shape;
+    QPolygonF _baseShape;
 
     QPolygonF baseShape();
     void setupShape();

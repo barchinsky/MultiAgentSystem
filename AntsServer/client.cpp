@@ -3,6 +3,7 @@
 #include "client.h"
 #include "server.h"
 #include "ant.h"
+#include "map.h"
 
 #include <QPolygonF>
 #include <QPointF>
@@ -17,7 +18,7 @@ Client::Client(int handle, Server *serv, QObject *parent):
     _position = QPointF(0,0);
     _direction = QPointF(0,1);
 
-    _ant = new Ant(_position,0.025);
+    _ant = new Ant(_position,Map::antScaleFactor());
     connect(this, SIGNAL(antPositionChanged(QPointF,QPointF)),_ant,SLOT(onPositionChanged(QPointF,QPointF)));
 
     _socket = new QTcpSocket(this);
@@ -33,6 +34,7 @@ Client::Client(int handle, Server *serv, QObject *parent):
 
 Client::~Client()
 {
+    qDebug() << "Dealock";
     delete[] _socket;
     delete[] _ant;
 }

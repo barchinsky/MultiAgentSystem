@@ -8,6 +8,7 @@
 #include "constants.h"
 #include "clover.h"
 #include "ant.h"
+#include "helpmath.h"
 
 
 Map::Map(QWidget *parent) :
@@ -17,9 +18,10 @@ Map::Map(QWidget *parent) :
     ui->setupUi(this);
     _serv = new Server(this,this);
 
-    if (_serv->doStartServer(QHostAddress(QString("127.0.0.1")),9000)) {
+    if (_serv->doStartServer(QHostAddress(QString("213.227.251.211")),9000)) {
         qDebug()<<"connected";
         connect(_serv,SIGNAL(onClientsCountChanged(int)),this,SLOT(clientsCountChanged(int)));
+        connect(_serv,SIGNAL(onClientDiedAtPoint(QPointF)),this,SLOT(antDiedAtPosition(QPointF)));
 
         _antsCount = 0;
         _antStep = 0.01;
@@ -50,6 +52,11 @@ Map::~Map()
 void Map::clientsCountChanged(int clientsCount)
 {    
     _antsCount = clientsCount;
+}
+
+void Map::antDiedAtPosition(QPointF position)
+{
+    _diedAntsPositions << position;
 }
 
 
@@ -87,6 +94,7 @@ void Map::paintGL()
     drawAnts();
     drawFood();
     drawBarries();
+    drawDiedAnts();
 
     swapBuffers();
 }
@@ -98,6 +106,11 @@ QPointF Map::baseCoord()
     return QPointF(0.02,0.02);
 }
 
+float Map::antScaleFactor()
+{
+    return 0.01;
+}
+
 // public methods
 
 float Map::getAntStep()
@@ -107,13 +120,16 @@ float Map::getAntStep()
 
 QPointF Map::antBornPoint()
 {
-    float x0 = baseCoord().x();
-    float y0 = baseCoord().y();
-    float degree = rand()%70 + 10;
-    float rad = degree * 0.01745329252; // degree * Pi / 180
-    float radius = _antStep * 5;
-    float x = x0 + radius * cos(rad);
-    float y = y0 + radius * sin(rad);
+//    float x0 = baseCoord().x();
+//    float y0 = baseCoord().y();
+//    float degree = rand()%70 + 10;
+//    float rad = degree * 0.01745329252; // degree * Pi / 180
+//    float radius = _antStep * 5;
+//    float x = x0 + radius * cos(rad);
+//    float y = y0 + radius * sin(rad);
+
+    float x = baseCoord().x();
+    float y = baseCoord().y();
 
     QPointF bornPoint(x,y);
     return bornPoint;
@@ -133,6 +149,11 @@ QPointF Map::nextPositionForAnt(Client *ant)
             return ant->getPosition();
         }
     }
+
+    if (_foodPositions.containsPoint(nextPosition,Qt::OddEvenFill)) {
+        return ant->getPosition();
+    }
+
     return nextPosition;
 }
 
@@ -244,18 +265,18 @@ void Map::setupBarriers()
     barrier5 << QPointF(0.40,0.09);
     barrier5 << QPointF(0.45,0.14);
 
-    _barrierPostions.append(barrier1);
-    _barrierPostions.append(barrier2);
-    _barrierPostions.append(barrier3);
-    _barrierPostions.append(barrier4);
-    _barrierPostions.append(barrier5);
+    _barrierPostions.append(barrier1);        
+    _barrierPostions.append(barrier2);    
+    _barrierPostions.append(barrier3);    
+    _barrierPostions.append(barrier4);    
+    _barrierPostions.append(barrier5);    
 }
 
 void Map::drawBorder()
 {
     qglColor(Qt::black);
 
-    float offset = 0;
+    float offset = antScaleFactor();
 
     glBegin(GL_LINE_LOOP);
     glVertex2f(-offset,1+offset);
@@ -289,15 +310,24 @@ void Map::drawAnts()
     qglColor(Qt::black);
     QList<Client *> ants = _serv->_clients;
 
-    foreach (Client *ant, ants) {
+    int antIndex = 1;
+
+    foreach (Client *ant, ants) {        
         glBegin(GL_LINE_LOOP);
         {
             foreach (QPointF point, ant->getAntShape()) {
                 glVertex2f(point.x(),point.y());
             }
         }
+        glEnd();
+
+//        QPointF pos = ant->getPosition();
+//        setFont(QFont());
+//        float offset = antScaleFactor;
+//        renderText(pos.x() + offset,pos.y() + offset,0.0,QString::fromUtf8("%1").arg(antIndex));
+        antIndex++;
     }
-    glEnd();
+
 }
 
 
@@ -326,6 +356,24 @@ void Map::drawBarries()
             glEnd();
         }
     }
+}
+
+void Map::drawDiedAnts()
+{
+    qglColor(Qt::red);
+
+    glBegin(GL_LINES);
+    foreach (QPointF pos, _diedAntsPositions) {
+        float offset = 0.5 * antScaleFactor();
+        float x0 = pos.x();
+        float y0 = pos.y();
+        glVertex2f(x0 - offset,y0 - offset);
+        glVertex2f(x0 + offset,y0 + offset);
+
+        glVertex2f(x0 + offset,y0 - offset);
+        glVertex2f(x0 - offset,y0 + offset);
+    }
+    glEnd();
 }
 
 

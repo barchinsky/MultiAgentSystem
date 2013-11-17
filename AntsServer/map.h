@@ -5,6 +5,7 @@
 #include <QtOpenGL>
 #include <QTimer>
 #include <QPolygonF>
+#include <QPointF>
 
 #include "server.h"
 
@@ -33,6 +34,7 @@ public:
     void paintGL(); // Метод для вывода изображения на экран
 
     static QPointF baseCoord();
+    static float antScaleFactor();
     float getAntStep();
 
     QPointF antBornPoint();
@@ -53,6 +55,7 @@ private:
     float _antLookingRadius;
 
     QPolygonF _foodPositions;
+    QPolygonF _diedAntsPositions;
     QList<QPolygonF> _barrierPostions;
 
     void setupFood();
@@ -63,9 +66,11 @@ private:
     void drawAnts();
     void drawFood();
     void drawBarries();
+    void drawDiedAnts();
 
 public slots:
     void clientsCountChanged(int clientsCount);
+    void antDiedAtPosition(QPointF point);
 
 };
 

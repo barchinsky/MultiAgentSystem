@@ -9,6 +9,7 @@ float Math::length(float x1, float y1, float x2, float y2)
     float x = x2 - x1;
     float y = y2 - y1;
     float length = qSqrt(qPow(x,2) + qPow(y,2));
+    length = round(length * 100) / 100.0;
     return length;
 }
 
@@ -39,8 +40,10 @@ QPolygonF Math::polygonForShape(QPolygonF const &inputShape, QPointF center, flo
     float f = center.y();
 
     foreach (QPointF point, inputShape) {
-        float x = (point.x()*a + point.y()*c) * scale  + e;
-        float y = (point.x()*b + point.y()*d) * scale  + f;
+        float x0 = point.x();
+        float y0 = point.y();
+        float x = (x0*a + y0*c) * scale  + e;
+        float y = (x0*b + y0*d) * scale  + f;
         newPolygon.append(QPointF(x,y));
     }
 
