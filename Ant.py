@@ -105,29 +105,34 @@ class Ant(threading.Thread):
             ssocket.listen(5)
             conn, addr = ssocket.accept()
             while True:
+                print "Server alive..."
                 data = conn.recv(1024)
                 print "server()::data received:",data
                 if len(data) > 0:
+                    print "server()::Data not empty. Contioniue..."
                     if self.is_client_request(data) : # if current message is request - send response
                         print "server()::request goted."
                         if self._is_food_found: # response if success way exists
                             print 'server()::success way axists. Perform response generating...'
                             response = self.create_get_found_way_response_query()
                             conn.send(response)
-                            print "server()::Responce sended:",response
+                            print "server()::Response sended:",response
                         print "server()::No success way found. Response NOT sended."
                     else: # process response
-                        print "server()::Responce received."
+                        print "server()::Response received."
                         j = json.dumps(data)
                         way_length = float(j["OBJECT"]["WAY_LENGTH"])
                         print "////////////",type(way_length),way_length
                         
                         if way_length < self._success_way_distance: # if new way is better
                             print "server()::New way is better. Update success way."
-                            self._success_way_distance = j["OBJECT"]["WAY_COORDS"] # update success way
+                            #self._success_way_distance = j["OBJECT"]["WAY_COORDS"] # update success way
+                else:
+                    print "No logical data accepted."
 
         except Exception,e:
-            print "Exception:"+str(e)
+            print "server()::Exception:"+str(e)
+            print "server()::End flow."
             sys.exit()
             
         conn.close()
@@ -136,11 +141,17 @@ class Ant(threading.Thread):
         '''
         Check if msg is request.
         '''
-        j = json.loads(msg)
-        obj = ["API_KEY"]["OBJECT"]
+        print "is_client_request(self,msg)::message:",msg
+        try:
+            j = json.loads(msg)
+            obj = ["OBJECT"]
 
-        if len(obj) < 0: # request
-            return True
+            if len(obj.items()) <= 0: # request
+                return True
+        except Exception,e:
+            print "is_client_request(self,msg):",str(e)
+
+        return False
 
 
     def get_unused_port(self):
@@ -263,15 +274,16 @@ class Ant(threading.Thread):
                     #raw_input("Food found.")
 
                 if len(ants) > 0: # if there is ants
-                    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                     print "process_response()::ants found"
                     for ant in ants: # generate success way request
+                        sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
                         ant_socket = ant["SOCKET"]
                         host,port = ant_socket.split(":")
                         try:
                             sock.connect( (host,int(port)) )
                             sock.sendall( self.create_get_found_way_reauest_query() ) # send request about passed way
+                            sock.close()
                         except Exception,e:
                             print "process_response()::sock.sendall(*) error occured.",e,"port:",port
                         print "ip:%s,port:%s"%(host,port)
