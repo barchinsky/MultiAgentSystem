@@ -67,14 +67,13 @@ QPointF Client::getAntMouthPosition()
 void Client::setPositionAndDirection(QPointF newPosition, QPointF newDirection)
 {
     _position = newPosition;
-    _direction = newDirection;
-    qDebug() << "position changed in client";
+    _direction = newDirection;    
     emit antPositionChanged(_position,_direction);
 }
 
 void Client::sendData(QByteArray dataArray)
 {
-//    qDebug() << "Send to" << _clientID << "data:" << QString(dataArray);
+    qDebug() << "Send to" << _clientID << "data:" << QString(dataArray);
     _socket->write(dataArray);
 }
 
@@ -115,5 +114,6 @@ void Client::onReadyRead()
 
     QByteArray data = _socket->readAll();
     QString str = QString(data);
+    qDebug()<<"server get: " << str;
     _server->parseDataFromClient(this,data);
 }
