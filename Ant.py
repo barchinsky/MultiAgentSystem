@@ -61,6 +61,7 @@ class Ant(threading.Thread):
         self._client_host=self._config.get("Ant","host")
         self._port=self._config.getint("Ant","port")
         self._server_host = self._config.get("Ant",'server_host')
+        self._server_port = 55000
         self._sleep_time = self._config.getfloat("Ant","sleep")
         
         self.client_socket=socket.socket(socket.AF_INET,socket.SOCK_STREAM) # socket connects to anthell server
@@ -77,6 +78,7 @@ class Ant(threading.Thread):
         self._direction_angel = 180 + random.randint(-150,150)# direction angel, using for defining direction in get_possible_direction()
 
         self._is_moving_back = False # True if move back to base
+        self._is_food_found = False
 
         #self.ping_server(self._server_host,self._port) # stop main thread if host unreachable
 
@@ -93,24 +95,53 @@ class Ant(threading.Thread):
     def server(self):
         print 'Server is working...'
         server_host = self._server_host
-        server_port = self.get_unused_port()
+        self._server_port = self.get_unused_port()
 
         try:
             ssocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             ssocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-            ssocket.bind((server_host,server_port))
-            ssocket.listen(1)
+            ssocket.bind((server_host,self._server_port))
+            ssocket.listen(5)
             conn, addr = ssocket.accept()
             while True:
                 data = conn.recv(1024)
-                print data
-                print 'client args:'+str(server_port)
+                print "server()::data received:",data
+                if len(data) > 0:
+                    if self.is_client_request(data) : # if current message is request - send response
+                        print "server()::request goted."
+                        if self._is_food_found: # response if success way exists
+                            print 'server()::success way axists. Perform response generating...'
+                            response = self.create_get_found_way_response_query()
+                            conn.send(response)
+                            print "server()::Responce sended:",response
+                        print "server()::No success way found. Response NOT sended."
+                    else: # process response
+                        print "server()::Responce received."
+                        j = json.dumps(data)
+                        way_length = float(j["OBJECT"]["WAY_LENGTH"])
+                        print "////////////",type(way_length),way_length
+                        
+                        if way_length < self._success_way_distance: # if new way is better
+                            print "server()::New way is better. Update success way."
+                            self._success_way_distance = j["OBJECT"]["WAY_COORDS"] # update success way
+
         except Exception,e:
             print "Exception:"+str(e)
             sys.exit()
             
         conn.close()
+
+    def is_client_request(self,msg):
+        '''
+        Check if msg is request.
+        '''
+        j = json.loads(msg)
+        obj = ["API_KEY"]["OBJECT"]
+
+        if len(obj) < 0: # request
+            return True
+
 
     def get_unused_port(self):
         print "AntServer::Loking for free port..."
@@ -168,7 +199,6 @@ class Ant(threading.Thread):
             response = self.client_socket.recv(1024)
             print "send::Response goted:", response
             
-
             if response:
                 self.process_response(response)
             else:
@@ -194,7 +224,7 @@ class Ant(threading.Thread):
             print "process_response::Is ant can move processing."
             if len(j["OBJECT"].items()) > 0 :
                 print "**process_response::Ant can move. Set direction to 45 degree."
-                #self._direction_angel = 180
+                #self._direction_angel = 18,,0
                 x,y = j["OBJECT"]["COORD_ANT"]
                 print "X,Y",x,y
 
@@ -222,13 +252,29 @@ class Ant(threading.Thread):
                 barriers = j["OBJECT"]["BARRIERS"]
                 objects = j["OBJECT"]
                 foods = j["OBJECT"]["FOODS"]
+                ants = j["OBJECT"]["ANTS"]
                 if foods:
                     self._success_way.append(self._passed_way)
                     self._success_way_distance = self.find_way_length( self._passed_way )
 
                     self._is_moving_back = True
                     print "process_responce::ff"
+                    self._is_food_found = True
                     #raw_input("Food found.")
+
+                if len(ants) > 0: # if there is ants
+                    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                    print "process_response()::ants found"
+                    for ant in ants: # generate success way request
+
+                        ant_socket = ant["SOCKET"]
+                        host,port = ant_socket.split(":")
+                        try:
+                            sock.connect( (host,int(port)) )
+                            sock.sendall( self.create_get_found_way_reauest_query() ) # send request about passed way
+                        except Exception,e:
+                            print "process_response()::sock.sendall(*) error occured.",e,"port:",port
+                        print "ip:%s,port:%s"%(host,port)
             else:
                 print "No objects found. Go on..."
 
@@ -240,7 +286,7 @@ class Ant(threading.Thread):
         return json.dumps(query)
 
     def get_socket(self):
-        return str(self._server_host)+':'+str(self._port)
+        return str(self._server_host)+':'+str(self._server_port)
 
     def create_is_ant_can_move_query(self,vector_x,vector_y):
         '''
@@ -316,7 +362,7 @@ class Ant(threading.Thread):
         while True:
             if not self._is_moving_back:
                 self.move()
-                self.send(self.create_get_nearest_object_query())
+                self.send( self.create_get_nearest_object_query() )
                 print "live::I'm alive!"
                 time.sleep(self._sleep_time)
             else:
@@ -332,6 +378,7 @@ class Ant(threading.Thread):
             x,y = self._passed_way[i]
             print "Current coords:(%s,%s)"%(x,y)
             self.send( self.create_is_ant_can_move_query_using_coords(x,y) )
+            self.send( self.create_get_nearest_object_query() )
 
             time.sleep(self._sleep_time)
 
@@ -359,8 +406,6 @@ class Ant(threading.Thread):
         #raw_input("End go to resource?")
         pass
 
-
-
     def find_way_length(self,way):
         '''
         Find way length.
@@ -373,11 +418,11 @@ class Ant(threading.Thread):
         return way_len
 
     def run(self):
-        #self.server_thread.start()
+        self.server_thread.start()
         self.client_thread.start()
 
         self.client_thread.join()
-        #self.server_thread.join()
+        self.server_thread.join()
 
 # /////////////////////// DEBUG ZONE ///////////////////////////
 if __name__=='__main__':
