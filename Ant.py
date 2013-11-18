@@ -246,10 +246,10 @@ class Ant(threading.Thread):
             else:
                 print "**process_response::Can't move with last direction... Choose another direction."
                 direction = random.uniform(-1,1)
-                if direction == 0:
-                    direction = -1
+                #if direction == 0:
+                #    direction = -1
 
-                self._direction_angel -= random.randint(60,100)*direction
+                self._direction_angel -= random.randint(60,100)*[-1,direction][bool(direction)]
 
                 print "self.direction_angel:",self._direction_angel
 
