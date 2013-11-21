@@ -18,7 +18,7 @@ Map::Map(QWidget *parent) :
     ui->setupUi(this);
     _serv = new Server(this,this);
 
-    if (_serv->doStartServer(QHostAddress(QString("127.0.0.1")),9000)) {
+    if (_serv->doStartServer(QHostAddress(QString("93.127.90.246")),9000)) {
         qDebug()<<"connected";
         connect(_serv,SIGNAL(onClientsCountChanged(int)),this,SLOT(clientsCountChanged(int)));
         connect(_serv,SIGNAL(onClientDiedAtPoint(QPointF)),this,SLOT(antDiedAtPosition(QPointF)));
