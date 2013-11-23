@@ -4,32 +4,29 @@
 #include <QTimer>
 #include <QDebug>
 
+static const float kTimerUpdateInterval = 100; // in msec
+
 
 Feromon::Feromon(QPointF position, QObject *parent) :
     QObject(parent)
 {
     _position = position;
-    _startTime = QTime::currentTime();
+    _startTime = 0;
     _alpha = 1.0;
 
     _timer = new QTimer(this);
     connect(_timer, SIGNAL(timeout()), this, SLOT(onUpdateState()));
-    _timer->start(100);
+    _timer->start(kTimerUpdateInterval);
 }
 
 void Feromon::onUpdateState()
-{
-    QTime currentTime = QTime::currentTime();
-    int diffIn_msec = currentTime.msec() - _startTime.msec();
-
-
-    qDebug() <<"Diff time" << diffIn_msec;
-
-    if (diffIn_msec >= 10000 && diffIn_msec <= 20000) {
-        _alpha = 1.0 - ((diffIn_msec - 10000) / 10000);
+{    
+    _startTime += kTimerUpdateInterval;
+    if (_startTime >= 10000 && _startTime <= 20000) {
+        _alpha = 1.0 - ((_startTime - 10000.0) / 10000.0);
     }
 
-    if (diffIn_msec > 20000) {
+    if (_startTime > 20000) {
         _timer->stop();
         delete _timer;
         emit disappearFeromon(this);

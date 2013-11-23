@@ -64,15 +64,15 @@ void Map::antDiedAtPosition(QPointF position)
 }
 
 void Map::onDisappearFeromon(Feromon *feromon)
-{
-    qDebug() << "onDisappearFeromon" << feromon;
-    _feromons.removeAt(_feromons.indexOf(feromon));
-    qDebug() << "Feromons count "<<_feromons.count();
+{    
+    _feromons.removeAt(_feromons.indexOf(feromon));    
 }
 
 void Map::initializeGL()
 {
     qglClearColor(Qt::white); // Черный цвет фона
+    glEnable(GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Map::resizeGL(int width, int height)
@@ -216,7 +216,7 @@ QVector<Client *> Map::antsNearAntPolygon(QPolygonF &antPolygon)
     QVector<Client *> nearAnts;
 
     foreach (Client *ant, _serv->_clients) {
-        if (ant->_withFood) {
+        if (ant->isWithFood()) {
             if (antPolygon.containsPoint(ant->getPosition(),Qt::OddEvenFill)) {
                 nearAnts << ant;
             }
@@ -281,9 +281,11 @@ void Map::setupBarriers()
 void Map::onUpdateAntsFeromons()
 {
     QList<Client *> ants = _serv->_clients;
+    qDebug() << "onUpdateAntsFeromons";
 
     foreach (Client *client, ants) {
-        if (client->_withFood) {
+        qDebug() << "isCanPutFeromon" << client->isCanPutFeromon();
+        if (client->isCanPutFeromon()) {
             Feromon *newFeromon = new Feromon(client->getPosition());
             connect(newFeromon,SIGNAL(disappearFeromon(Feromon*)),this,SLOT(onDisappearFeromon(Feromon*)));
             _feromons.append(newFeromon);
@@ -325,13 +327,11 @@ void Map::drawBase()
 
 
 void Map::drawAnts()
-{
-    qglColor(Qt::black);
+{    
     QList<Client *> ants = _serv->_clients;
 
-    int antIndex = 1;
-
-    foreach (Client *ant, ants) {        
+    foreach (Client *ant, ants) {
+        qglColor(Qt::black);
         glBegin(GL_LINE_LOOP);
         {
             foreach (QPointF point, ant->getAntShape()) {
@@ -340,13 +340,19 @@ void Map::drawAnts()
         }
         glEnd();
 
-//        QPointF pos = ant->getPosition();
-//        setFont(QFont());
-//        float offset = antScaleFactor;
-//        renderText(pos.x() + offset,pos.y() + offset,0.0,QString::fromUtf8("%1").arg(antIndex));
-        antIndex++;
-    }
+        if (ant->isWithFood()) {
+            glBegin(GL_TRIANGLES);
+            qglColor(QColor(0,255,0,230)/*QColor(176,214,0,200)*/);
 
+
+            foreach (QPointF point, ant->_ant->getLeaflet()) {
+                glVertex2f(point.x(),point.y());
+            }
+
+            glEnd();
+
+        }
+    }
 }
 
 
@@ -398,17 +404,15 @@ void Map::drawDiedAnts()
 void Map::drawFeromons()
 {
     glPointSize(5);
+    glBegin(GL_POINTS);
+
     foreach (Feromon *feromon, _feromons) {
-        glBegin(GL_POINTS);
         float alpha = 255.0 * feromon->getAlpha();
         QPointF position = feromon->getPosition();
-
-        qglColor(QColor(10,122,0,alpha));
-
+        qglColor(QColor(145,122,0,alpha));
         glVertex2f(position.x(),position.y());
-
-        glEnd();
     }
+    glEnd();
 }
 
 

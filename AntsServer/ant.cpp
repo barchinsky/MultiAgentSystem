@@ -26,6 +26,31 @@ QPointF Ant::getMouthPosition()
     return _mouthPosition;
 }
 
+QPolygonF Ant::getLeaflet()
+{
+    QPolygonF leafletShape;
+    leafletShape << _mouthPosition;
+
+    float x0 = _mouthPosition.x();
+    float y0 = _mouthPosition.y();
+
+    float radius = 3.0 * _scale;
+
+    float angle1 = (float)(rand()%10) * M_PI / 180.0;
+    float angle2 = angle1 + 100 * M_PI / 180.0;
+
+    float angles[2] = {angle1,angle2};
+
+    for (int i = 0; i < 2; i++) {
+        float randAngle = angles[i];
+        float x = x0 + radius * cos(randAngle);
+        float y = y0 + radius * sin(randAngle);
+        leafletShape << QPointF(x,y);
+    }
+
+    return leafletShape;
+}
+
 
 // slots
 void Ant::onPositionChanged(QPointF center, QPointF vector)
@@ -64,17 +89,17 @@ QPolygonF Ant::baseShape()
     shape << QPointF(0.250, -0.350);
     shape << QPointF(0.020,  0.000);
     shape << QPointF(0.125,  0.250);
-    shape << QPointF(0.020, (0.750 - 0.5)*2);
-    shape << QPointF(0.200, (0.800 - 0.5)*2);
+    shape << QPointF(0.020,  0.500);
+    shape << QPointF(0.200,  0.600);
     shape << QPointF(0.050, 1.000);
     // left side
     shape << QPointF(-0.050, 1.000);
-    shape << QPointF(-0.200, (0.800 - 0.5)*2);
-    shape << QPointF(-0.020, (0.750 - 0.5)*2);
-    shape << QPointF(-0.125, (0.625 - 0.5)*2);
-    shape << QPointF(-0.020, (0.500 - 0.5)*2);
-    shape << QPointF(-0.250, (0.325 - 0.5)*2);
-    shape << QPointF(-0.250, (0.125 - 0.5)*2);
+    shape << QPointF(-0.200, 0.600);
+    shape << QPointF(-0.020, 0.500);
+    shape << QPointF(-0.125, 0.250);
+    shape << QPointF(-0.020, 0.000);
+    shape << QPointF(-0.250, -0.350);
+    shape << QPointF(-0.250, -0.750);
 
     return shape;
 }

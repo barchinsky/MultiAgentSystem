@@ -42,12 +42,19 @@ class Line:
 		contain = (min(x1,x2)<=p.x<=max(x1,x2) and min(y1,y2)<=p.y<=max(y1,y2))
 		return contain	
 
+	def log(self):
+		print "Line log:\n"
+		self.p1.log()
+		self.p2.log()
+
 	def getVector(self):
 		return Vector(self.p1,self.p2)
 
 	def getAngle(self): # in rad
 		vec = self.getVector()
 		angle = math.atan2(vec.y,vec.x)
+		if angle < 0:
+				angle = math.pi*2 + angle 
 		return angle
 
 	def length(self):
@@ -148,45 +155,49 @@ class Polygon:
 		for point in self.points:
 			point.log()
 
-	def isRayIntersect(point,angle_in_rad):
-		print "point ",point
-		print "angle ",angle_in_rad * 180 / Math.pi		
+	def isRayIntersect(self,input_point,angle_in_rad):			
+		angles = []
+		for point in self.points:
+			line = Line(input_point,point)
+			angle = line.getAngle()
+			if angle < 0:
+				angle = math.pi*2 + angle 
+			angles.append(angle)			
+
+		if angle_in_rad >= min(angles) and angle_in_rad <= max(angles):
+			return True
+
+		return False
+
 
 
 	def getSmallerShapeDevidedByFundtion(self,liniar_function):
-		left_shape = Polygon([])
-		right_shape = Polygon([])
 
 		base_point = liniar_function.line.p1		
 		start_angle = liniar_function.line.getAngle()
-		if start_angle < 0:
-			start_angle = math.pi*2 + start_angle
-		print "start_angle ",start_angle * 180 / math.pi 
+
+		if not self.isRayIntersect(base_point,start_angle):
+			return {"is_intersect": False}
+
+
+		left_shape = Polygon([])
+		right_shape = Polygon([])		 
 
 		count = len(self.points)		
 		intersect_points = []
 		for i in range(count):
 			p1 = self.points[i]			
 			angle = Line(base_point,p1).getAngle()
-			if angle < 0:
-				angle = math.pi*2 + angle
-			diff = start_angle - angle
+			
+			diff = start_angle - angle						
 
-			print "check point"
-			p1.log()
-			print "angle ",angle * 180 / math.pi
-			print "diff ",diff * 180 / math.pi
-
-			if diff == 0:
-				print "point wrote to both shapes"
+			if diff == 0:				
 				left_shape.addPoint(p1)
 				right_shape.addPoint(p1)
 			else:
-				if diff < 0:
-					print "point wrote to LEFT shape"
+				if diff < 0:					
 					left_shape.addPoint(p1)
-				else:
-					print "point wrote to RiGHT shape"
+				else:					
 					right_shape.addPoint(p1)
 
 			p2 = self.points[i+1] if (i + 1) < count else self.points[0]
@@ -196,7 +207,7 @@ class Polygon:
 			if is_intersect:
 				point.additional_info["marked"] = True
 				point_added = False
-
+				
 				if len(intersect_points) == 0:
 					intersect_points.append(point)
 					point_added = True
@@ -208,20 +219,9 @@ class Polygon:
 						point_added = True
 
 				if point_added:
-					p1 = self.points[i]			
-					angle = Line(base_point,point).getAngle()
-					if angle < 0:
-						angle = math.pi*2 + angle
-					diff = start_angle - angle
-
-					if diff == 0:
-						left_shape.addPoint(point)
-						right_shape.addPoint(point)
-					else:
-						if diff < 0:
-							left_shape.addPoint(point)
-						else:
-							right_shape.addPoint(point)	
+					left_shape.addPoint(point)
+					right_shape.addPoint(point)
+		
 
 		if len(intersect_points) == 0:
 			return {"is_intersect": False}
@@ -230,12 +230,12 @@ class Polygon:
 		
 		left_square = left_shape.get_square()
 		right_square = right_shape.get_square()
-
+		
 		smaller_shape = left_shape if left_square < right_square else right_shape
 
 		min_inter_point = Point(0,0)
 		max_inter_point = Point(0,0)
-		min_length = 99999
+		min_length = 99999999
 		max_length = 0
 
 		for point in intersect_points:
@@ -254,6 +254,9 @@ class Polygon:
 				point.additional_info["min"] = True
 			elif max_inter_point.equal(point):
 				point.additional_info["max"] = True
+
+		
+		smaller_shape = self.__sort_marked_shape(smaller_shape)
 		
 		return {"is_intersect": True, "shape":smaller_shape}
 
@@ -281,49 +284,49 @@ class Polygon:
 		square = (xy_sum - yx_sum) / 2
 		return square
 
-def sort_marked_shape(shape):
-	sorted_shape = Polygon([])
+	def __sort_marked_shape(self,shape):
+		sorted_shape = Polygon([])
 
-	first_point_index = 0
-	last_point_index = 0
+		first_point_index = 0
+		last_point_index = 0
 
-	i = 0
-	for point in shape.points:		
-		if point.additional_info.has_key("min") and point.additional_info["min"] == True:
-			first_point_index = i
-		elif point.additional_info.has_key("max") and point.additional_info["max"] == True:
-			last_point_index = i
-		i += 1
+		i = 0
+		for point in shape.points:		
+			if point.additional_info.has_key("min") and point.additional_info["min"] == True:
+				first_point_index = i
+			elif point.additional_info.has_key("max") and point.additional_info["max"] == True:
+				last_point_index = i
+			i += 1
 
-	#select direction
-	left_index = first_point_index - 1 if first_point_index != 0 else len(shape.points) - 1
-	right_index = first_point_index + 1 if first_point_index != len(shape.points) - 1 else 0 
+		#select direction
+		left_index = first_point_index - 1 if first_point_index != 0 else len(shape.points) - 1
+		right_index = first_point_index + 1 if first_point_index != len(shape.points) - 1 else 0 
 
-	direction = 0
-	if not shape.points[left_index].additional_info.has_key("marked") and shape.points[right_index].additional_info.has_key("marked"):
-		direction = -1
-	elif not shape.points[right_index].additional_info.has_key("marked") and shape.points[left_index].additional_info.has_key("marked"):
-		direction = 1
+		direction = 0
+		if not shape.points[left_index].additional_info.has_key("marked") and shape.points[right_index].additional_info.has_key("marked"):
+			direction = -1
+		elif not shape.points[right_index].additional_info.has_key("marked") and shape.points[left_index].additional_info.has_key("marked"):
+			direction = 1
 
-	if direction == 0:
-		return None
+		if direction == 0:
+			return None
 
-	i = first_point_index
+		i = first_point_index
 
-	while 1:
-		new_point = shape.points[i]
-		sorted_shape.addPoint(new_point)
+		while 1:
+			new_point = shape.points[i]
+			sorted_shape.addPoint(new_point)
 
-		if i == last_point_index:
-			break
+			if i == last_point_index:
+				break
 
-		i += direction
-		if i < 0:
-			i = len(shape.points) - 1
-		elif i > (len(shape.points) - 1):
-			i = 0
+			i += direction
+			if i < 0:
+				i = len(shape.points) - 1
+			elif i > (len(shape.points) - 1):
+				i = 0
 
-	return sorted_shape
+		return sorted_shape
 
 
 
@@ -357,36 +360,35 @@ def square_test():
 	print "result square ",square
 
 def sort_shape_test():
-	points = [[-2,0],[0,-2],[4,-1],[1,0],[5,2],[0,5],[-2,3]]
+	# points = [[-2,0],[0,-2],[4,-1],[1,0],[5,2],[0,5],[-2,3]]
+
+	points = [[-2,0],[0,0],[5,5],[0,4]]
 	shape = Polygon(points)
 
-	p1 = Point(3,5)
-	p2 = Point(3,4)
-	line = Line(p1,p2) # check all there
-	lin_fun = LiniarFunction(line)
+	x0 = -2
+	y0 = -2
 
-	print "Base polygon points"
-	shape.log()
-	print shape.get_square()
+	for i in range(0,46):
+		deg = i 
+		print "TEST FOR ",deg," DEGREE\n"
 
-	inter_dict = shape.getSmallerShapeDevidedByFundtion(lin_fun)
-	
-	if inter_dict["is_intersect"]:
-		if inter_dict.has_key("shape"):			
-
-			print "\n\nshape before sorting"
-			inter_dict["shape"].log()
-
-
-			sorted_shape = sort_marked_shape(inter_dict["shape"])
-
-			print "\n\nsorted_shape"
-			if sorted_shape:
-				sorted_shape.log()
-			else:
-				print "some error in sort marked shape"
+		x = x0 + math.cos(deg*math.pi/180)
+		y = y0 + math.sin(deg*math.pi/180)
+		p1 = Point(x0,y0)
+		p2 = Point(x,y)
+		line = Line(p1,p2) # check all there
 			
-			pass
+		lin_fun = LiniarFunction(line)
+
+		inter_dict = shape.getSmallerShapeDevidedByFundtion(lin_fun)
+		
+		if inter_dict["is_intersect"]:
+			if inter_dict.has_key("shape"):			
+				print "\n\nDivided shape ",inter_dict["shape"]
+				inter_dict["shape"].log()
+		else:
+			print "Don't intersect"
+
 
 
 if __name__=='__main__':

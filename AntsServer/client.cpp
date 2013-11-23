@@ -18,6 +18,7 @@ Client::Client(int handle, Server *serv, QObject *parent):
     _position = QPointF(0,0);
     _direction = QPointF(0,1);
     _withFood = false;
+    _canPutFeromon = false;
 
     _ant = new Ant(_position,Map::antScaleFactor());
     connect(this, SIGNAL(antPositionChanged(QPointF,QPointF)),_ant,SLOT(onPositionChanged(QPointF,QPointF)));
@@ -63,6 +64,24 @@ QPolygonF Client::getAntShape()
 QPointF Client::getAntMouthPosition()
 {
     return _ant->getMouthPosition();
+}
+
+void Client::setWithFood(bool isWithFood)
+{
+    _withFood = isWithFood;
+    if (isWithFood) {
+        _canPutFeromon = true;
+    }
+}
+
+bool Client::isWithFood()
+{
+    return _withFood;
+}
+
+bool Client::isCanPutFeromon()
+{
+    return _canPutFeromon;
 }
 
 void Client::setPositionAndDirection(QPointF newPosition, QPointF newDirection)

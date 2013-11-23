@@ -13,17 +13,18 @@ class Client : public QObject
     friend class Server;
     Q_OBJECT
 private:
-    Server *_server;
-    Ant *_ant;
+    Server *_server;    
     QPointF _position;
     QPointF _direction;
     QTcpSocket *_socket;
     QString _name;    
     qint32 _clientID;
+    bool _withFood;
+    bool _canPutFeromon;
 
 public:    
     QString _socketForConnection;
-    bool _withFood;
+    Ant *_ant;
 
     explicit Client(int desc, Server *serv, QObject *parent = 0);
     ~Client();
@@ -32,7 +33,10 @@ public:
     QPointF getPosition();
     QPointF getDircetion();
     QPolygonF getAntShape();
-    QPointF getAntMouthPosition();
+    QPointF getAntMouthPosition();    
+    void setWithFood(bool);
+    bool isWithFood();
+    bool isCanPutFeromon();
     void setPositionAndDirection(QPointF newPosition, QPointF newDirection);
     void sendData(QByteArray);
 

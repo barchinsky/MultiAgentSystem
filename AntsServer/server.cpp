@@ -161,7 +161,7 @@ QByteArray Server::isGotFood(Client *ant)
     QJsonDocument json(JsonObject);
 
     qDebug() << "Food GOT";
-    ant->_withFood = true;
+    ant->setWithFood(true);
 
     return json.toJson();
 }
@@ -177,9 +177,8 @@ QByteArray Server::isPutFood(Client *ant)
     JsonObject.insert(kJSON_OBJECT,QJsonValue(isPut));
     QJsonDocument json(JsonObject);
 
-
+    ant->setWithFood(false);
     return json.toJson();
-
 }
 
 bool Server::getCoords(float *x, float *y, QJsonValue coordArray)

@@ -12,7 +12,7 @@ class Feromon : public QObject
     Q_OBJECT
 private:
     QPointF _position;
-    QTime _startTime;
+    long _startTime;
     float _alpha;
     QTimer *_timer;
 
