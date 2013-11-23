@@ -32,6 +32,10 @@ QByteArray Server::parseJSONwithKeyAndObject(Client *ant, QString key, QJsonObje
         return isAntCanMove(ant,obj);
     } else if (key == kAPI_nearest_objects) {
         return getNearestObjects(ant);
+    } else if (key == kAPI_got_food) {
+        return isGotFood(ant);
+    } else if (key == kAPI_put_food) {
+        return isPutFood(ant);
     }
 
     return getErrorJSONData();
@@ -143,6 +147,39 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
 
     // if something wrong return error
     return getErrorJSONData();
+}
+
+QByteArray Server::isGotFood(Client *ant)
+{
+    QJsonObject JsonObject;
+    JsonObject.insert(kJSON_API_KEY,QJsonValue(kAPI_got_food));
+
+    QJsonObject isGot;
+    isGot.insert(kJSON_GOT_FOOD,QJsonValue(1));
+
+    JsonObject.insert(kJSON_OBJECT,QJsonValue(isGot));
+    QJsonDocument json(JsonObject);
+
+    qDebug() << "Food GOT";
+    ant->_withFood = true;
+
+    return json.toJson();
+}
+
+QByteArray Server::isPutFood(Client *ant)
+{
+    QJsonObject JsonObject;
+    JsonObject.insert(kJSON_API_KEY,QJsonValue(kAPI_put_food));
+
+    QJsonObject isPut;
+    isPut.insert(kJSON_PUT_FOOD,QJsonValue(1));
+
+    JsonObject.insert(kJSON_OBJECT,QJsonValue(isPut));
+    QJsonDocument json(JsonObject);
+
+
+    return json.toJson();
+
 }
 
 bool Server::getCoords(float *x, float *y, QJsonValue coordArray)

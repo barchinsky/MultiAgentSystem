@@ -37,6 +37,10 @@ Map::Map(QWidget *parent) :
         connect(timer, SIGNAL(timeout()), this, SLOT(updateGL()));
         timer->start(16);
 
+        QTimer *timer2 = new QTimer(this);
+        connect(timer2, SIGNAL(timeout()), this, SLOT(onUpdateAntsFeromons()));
+        timer2->start(5000);
+
     } else {
         qDebug()<<"failed";
     }
@@ -59,6 +63,12 @@ void Map::antDiedAtPosition(QPointF position)
     _diedAntsPositions << position;
 }
 
+void Map::onDisappearFeromon(Feromon *feromon)
+{
+    qDebug() << "onDisappearFeromon" << feromon;
+    _feromons.removeAt(_feromons.indexOf(feromon));
+    qDebug() << "Feromons count "<<_feromons.count();
+}
 
 void Map::initializeGL()
 {
@@ -91,6 +101,7 @@ void Map::paintGL()
     drawBorder();
     renderText(0.01,1 + 2*_antStep,0.0,QString::fromUtf8("Ants count: %1").arg(_antsCount));
     drawBase();
+    drawFeromons();
     drawAnts();
     drawFood();
     drawBarries();
@@ -103,7 +114,7 @@ void Map::paintGL()
 
 QPointF Map::baseCoord()
 {
-    return QPointF(0.02,0.02);
+    return QPointF(0.15,0.15);
 }
 
 float Map::antScaleFactor()
@@ -205,8 +216,10 @@ QVector<Client *> Map::antsNearAntPolygon(QPolygonF &antPolygon)
     QVector<Client *> nearAnts;
 
     foreach (Client *ant, _serv->_clients) {
-        if (antPolygon.containsPoint(ant->getPosition(),Qt::OddEvenFill)) {
-            nearAnts << ant;
+        if (ant->_withFood) {
+            if (antPolygon.containsPoint(ant->getPosition(),Qt::OddEvenFill)) {
+                nearAnts << ant;
+            }
         }
     }
 
@@ -263,6 +276,19 @@ void Map::setupBarriers()
     _barrierPostions.append(barrier3);    
     _barrierPostions.append(barrier4);    
     _barrierPostions.append(barrier5);    
+}
+
+void Map::onUpdateAntsFeromons()
+{
+    QList<Client *> ants = _serv->_clients;
+
+    foreach (Client *client, ants) {
+        if (client->_withFood) {
+            Feromon *newFeromon = new Feromon(client->getPosition());
+            connect(newFeromon,SIGNAL(disappearFeromon(Feromon*)),this,SLOT(onDisappearFeromon(Feromon*)));
+            _feromons.append(newFeromon);
+        }
+    }
 }
 
 void Map::drawBorder()
@@ -367,6 +393,22 @@ void Map::drawDiedAnts()
         glVertex2f(x0 - offset,y0 + offset);
     }
     glEnd();
+}
+
+void Map::drawFeromons()
+{
+    glPointSize(5);
+    foreach (Feromon *feromon, _feromons) {
+        glBegin(GL_POINTS);
+        float alpha = 255.0 * feromon->getAlpha();
+        QPointF position = feromon->getPosition();
+
+        qglColor(QColor(10,122,0,alpha));
+
+        glVertex2f(position.x(),position.y());
+
+        glEnd();
+    }
 }
 
 

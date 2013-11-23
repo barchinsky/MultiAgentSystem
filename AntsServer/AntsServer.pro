@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     client.cpp \
     clover.cpp \
     helpmath.cpp \
-    ant.cpp
+    ant.cpp \
+    feromon.cpp
 
 HEADERS  += map.h \
     server.h \
@@ -26,6 +27,7 @@ HEADERS  += map.h \
     constants.h \
     clover.h \
     helpmath.h \
-    ant.h
+    ant.h \
+    feromon.h
 
 FORMS    += map.ui

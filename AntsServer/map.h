@@ -8,6 +8,7 @@
 #include <QPointF>
 
 #include "server.h"
+#include "feromon.h"
 
 namespace Ui {
 class Map;
@@ -45,6 +46,7 @@ public:
     QPolygonF foodPositionsNearAntPolygon(QPointF &checkPoint);
     QVector<Client *> antsNearAntPolygon(QPolygonF &antPolygon);
 
+
 private:
     Ui::Map *ui;
     Server *_serv;
@@ -57,9 +59,11 @@ private:
     QPolygonF _foodPositions;
     QPolygonF _diedAntsPositions;
     QList<QPolygonF> _barrierPostions;
+    QList<Feromon *> _feromons;
 
     void setupFood();
     void setupBarriers();
+
 
     void drawBorder();
     void drawBase();
@@ -67,11 +71,13 @@ private:
     void drawFood();
     void drawBarries();
     void drawDiedAnts();
+    void drawFeromons();
 
 public slots:
     void clientsCountChanged(int clientsCount);
     void antDiedAtPosition(QPointF point);
-
+    void onUpdateAntsFeromons();
+    void onDisappearFeromon(Feromon *feromon);
 };
 
 #endif // MAP_H

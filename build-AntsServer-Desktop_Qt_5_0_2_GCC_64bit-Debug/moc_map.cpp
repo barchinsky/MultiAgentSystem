@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_Map_t {
-    QByteArrayData data[6];
-    char stringdata[63];
+    QByteArrayData data[10];
+    char stringdata[120];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -34,10 +34,15 @@ QT_MOC_LITERAL(1, 4, 19),
 QT_MOC_LITERAL(2, 24, 0),
 QT_MOC_LITERAL(3, 25, 12),
 QT_MOC_LITERAL(4, 38, 17),
-QT_MOC_LITERAL(5, 56, 5)
+QT_MOC_LITERAL(5, 56, 5),
+QT_MOC_LITERAL(6, 62, 20),
+QT_MOC_LITERAL(7, 83, 18),
+QT_MOC_LITERAL(8, 102, 8),
+QT_MOC_LITERAL(9, 111, 7)
     },
     "Map\0clientsCountChanged\0\0clientsCount\0"
-    "antDiedAtPosition\0point\0"
+    "antDiedAtPosition\0point\0onUpdateAntsFeromons\0"
+    "onDisappearFeromon\0Feromon*\0feromon\0"
 };
 #undef QT_MOC_LITERAL
 
@@ -47,7 +52,7 @@ static const uint qt_meta_data_Map[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       2,   14, // methods
+       4,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -55,12 +60,16 @@ static const uint qt_meta_data_Map[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    1,   24,    2, 0x0a,
-       4,    1,   27,    2, 0x0a,
+       1,    1,   34,    2, 0x0a,
+       4,    1,   37,    2, 0x0a,
+       6,    0,   40,    2, 0x0a,
+       7,    1,   41,    2, 0x0a,
 
  // slots: parameters
     QMetaType::Void, QMetaType::Int,    3,
     QMetaType::Void, QMetaType::QPointF,    5,
+    QMetaType::Void,
+    QMetaType::Void, 0x80000000 | 8,    9,
 
        0        // eod
 };
@@ -72,7 +81,20 @@ void Map::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **
         switch (_id) {
         case 0: _t->clientsCountChanged((*reinterpret_cast< int(*)>(_a[1]))); break;
         case 1: _t->antDiedAtPosition((*reinterpret_cast< QPointF(*)>(_a[1]))); break;
+        case 2: _t->onUpdateAntsFeromons(); break;
+        case 3: _t->onDisappearFeromon((*reinterpret_cast< Feromon*(*)>(_a[1]))); break;
         default: ;
+        }
+    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+        switch (_id) {
+        default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+        case 3:
+            switch (*reinterpret_cast<int*>(_a[1])) {
+            default: *reinterpret_cast<int*>(_a[0]) = -1; break;
+            case 0:
+                *reinterpret_cast<int*>(_a[0]) = qRegisterMetaType< Feromon* >(); break;
+            }
+            break;
         }
     }
 }
@@ -102,13 +124,13 @@ int Map::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 2)
+        if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 4;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 2)
-            *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 2;
+        if (_id < 4)
+            qt_static_metacall(this, _c, _id, _a);
+        _id -= 4;
     }
     return _id;
 }

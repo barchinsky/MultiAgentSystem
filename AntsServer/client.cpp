@@ -17,6 +17,7 @@ Client::Client(int handle, Server *serv, QObject *parent):
     _clientID = handle;
     _position = QPointF(0,0);
     _direction = QPointF(0,1);
+    _withFood = false;
 
     _ant = new Ant(_position,Map::antScaleFactor());
     connect(this, SIGNAL(antPositionChanged(QPointF,QPointF)),_ant,SLOT(onPositionChanged(QPointF,QPointF)));
@@ -73,7 +74,7 @@ void Client::setPositionAndDirection(QPointF newPosition, QPointF newDirection)
 
 void Client::sendData(QByteArray dataArray)
 {
-    qDebug() << "Send to" << _clientID << "data:" << QString(dataArray);
+//    qDebug() << "Send to" << _clientID << "data:" << QString(dataArray);
     _socket->write(dataArray);
 }
 
@@ -114,6 +115,6 @@ void Client::onReadyRead()
 
     QByteArray data = _socket->readAll();
     QString str = QString(data);
-    qDebug()<<"server get: " << str;
+//    qDebug()<<"server get: " << str;
     _server->parseDataFromClient(this,data);
 }

@@ -26,6 +26,8 @@ private:
     QByteArray getErrorJSONData();
     QByteArray registerClient(Client *ant, QJsonObject jsonObject);
     QByteArray isAntCanMove(Client *ant, QJsonObject vector);
+    QByteArray isGotFood(Client *ant);
+    QByteArray isPutFood(Client *ant);
 
     bool getCoords(float *x, float *y, QJsonValue coordArray);
     bool isRightDirection(float x, float y);

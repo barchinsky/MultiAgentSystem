@@ -15,12 +15,16 @@
 #define kJSON_FOODS        QString("FOODS")
 #define kJSON_BARRIERS     QString("BARRIERS")
 #define kJSON_SOCKET       QString("SOCKET")
+#define kJSON_GOT_FOOD     QString("GOT_FOOD")
+#define kJSON_PUT_FOOD     QString("PUT_FOOD")
 
 
 //  API keys
 #define kAPI_register           QString("registration")
 #define kAPI_nearest_objects    QString("nearest_objects")
 #define kAPI_is_ant_can_move    QString("is_ant_can_move")
+#define kAPI_got_food           QString("got_food")
+#define kAPI_put_food           QString("put_food")
 #define kAPI_error              QString("ERROR")
 
 //enums

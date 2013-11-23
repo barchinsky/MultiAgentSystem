@@ -148,6 +148,10 @@ class Polygon:
 		for point in self.points:
 			point.log()
 
+	def isRayIntersect(point,angle_in_rad):
+		print "point ",point
+		print "angle ",angle_in_rad * 180 / Math.pi		
+
 
 	def getSmallerShapeDevidedByFundtion(self,liniar_function):
 		left_shape = Polygon([])

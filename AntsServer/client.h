@@ -19,10 +19,11 @@ private:
     QPointF _direction;
     QTcpSocket *_socket;
     QString _name;    
-    qint32 _clientID;    
+    qint32 _clientID;
 
 public:    
     QString _socketForConnection;
+    bool _withFood;
 
     explicit Client(int desc, Server *serv, QObject *parent = 0);
     ~Client();
