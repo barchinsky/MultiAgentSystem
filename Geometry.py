@@ -21,7 +21,8 @@ class Point:
 		return point
 
 	def equal(self,point):
-		return ((self.x == point.x) and (self.y == point.y))
+		EPS = 1e-9
+		return ((point.x - EPS <= self.x <= point.x + EPS) and (point.y - EPS <= self.y <= point.y + EPS))
 
 	def log(self):
 		print "Point ",self," (",self.x,",",self.y,")"
@@ -34,12 +35,15 @@ class Line:
 		self.p1 = p1
 		self.p2 = p2
 
-	def is_containt_point(self,p):
+	def is_containt_point(self,p):		
 		x1 = self.p1.x
 		y1 = self.p1.y
 		x2 = self.p2.x
 		y2 = self.p2.y
-		contain = (min(x1,x2)<=p.x<=max(x1,x2) and min(y1,y2)<=p.y<=max(y1,y2))
+		EPS = 1e-9
+		check_x = min(x1,x2) - EPS<=p.x<=max(x1,x2) + EPS
+		check_y = min(y1,y2) - EPS<=p.y<=max(y1,y2) + EPS		
+		contain = check_x and check_y
 		return contain	
 
 	def log(self):
@@ -51,14 +55,42 @@ class Line:
 		return Vector(self.p1,self.p2)
 
 	def getAngle(self): # in rad
-		vec = self.getVector()
-		angle = math.atan2(vec.y,vec.x)
-		if angle < 0:
-				angle = math.pi*2 + angle 
-		return angle
+		angle = self.getVector().getAngle()
+		return angle		
 
 	def length(self):
 		return self.getVector().length()
+
+	def height_to_point(self,point):
+		a = self.length()
+		b = Line(self.p1,point).length()
+		c = Line(self.p2,point).length()
+		p = 0.5 * (a + b + c)
+		ha = 2 / a * (p*(p-a)*(p-b)*(p-c))**0.5
+		return ha
+
+	def point_of_height_vertex_to_right_direction(self,height,is_right_dir):		
+		vec = self.getVector()
+		length = vec.length()
+		pi = math.pi
+
+		angle = vec.getAngle();		
+		if is_right_dir:
+			angle -= pi / 2
+		else:
+			angle += pi / 2
+
+		angle = angle % (2*pi)
+		x_dir, y_dir = 1, 1
+
+		if angle > pi / 2 and angle < pi * 1.5:
+			x_dir = -1
+		if angle > pi and angle < pi * 2:
+			y_dir = -1
+
+		hx = self.p1.x + abs(vec.y) / length * x_dir * height
+		hy = self.p1.y + abs(vec.x) / length * y_dir * height 
+		return Point(hx,hy)
 
 class Vector:		
 	def __init__(self, p1, p2):		
@@ -71,11 +103,11 @@ class Vector:
 		y = self.y
 		return (x**2 + y**2)**0.5
 
-class PointOnLine(object):	
-	def __init__(self, arg):
-		super(PointOnLine, self).__init__()
-		self.arg = arg
-		
+	def getAngle(self):
+		angle = math.atan2(self.y,self.x)
+		if angle < 0:
+				angle = math.pi*2 + angle 
+		return angle
 
 
 class LiniarFunction:	
@@ -84,6 +116,12 @@ class LiniarFunction:
 
 	def setLine(self,line):
 		self.line = line
+		self.__calculate_function()
+
+	def setPointAndAngle(self,point,angle):
+		x2 = point.x + cos(angle)
+		y2 = point.y + sin(angle)
+		self.line = Line(point,Point(x2,y2))
 		self.__calculate_function()
 		
 
@@ -114,7 +152,7 @@ class LiniarFunction:
 	def intersect_with_segment(self,segment):
 		is_intersect, point = self.intersect(LiniarFunction(segment))
 
-		if is_intersect:
+		if is_intersect:			
 			if segment.is_containt_point(point):
 				return True, point
 		
@@ -169,8 +207,6 @@ class Polygon:
 
 		return False
 
-
-
 	def getSmallerShapeDevidedByFundtion(self,liniar_function):
 
 		base_point = liniar_function.line.p1		
@@ -186,9 +222,11 @@ class Polygon:
 		count = len(self.points)		
 		intersect_points = []
 		for i in range(count):
-			p1 = self.points[i]			
-			angle = Line(base_point,p1).getAngle()
-			
+			p1 = self.points[i]
+			p2 = self.points[i+1] if (i + 1) < count else self.points[0]
+
+			#add already existed point to shape		
+			angle = Line(base_point,p1).getAngle()			
 			diff = start_angle - angle						
 
 			if diff == 0:				
@@ -200,11 +238,12 @@ class Polygon:
 				else:					
 					right_shape.addPoint(p1)
 
-			p2 = self.points[i+1] if (i + 1) < count else self.points[0]
-			line = Line(p1,p2)
+
+			line = Line(p1,p2)			
 			is_intersect, point = liniar_function.intersect_with_segment(line)
-			
-			if is_intersect:
+
+			# added intersect point	
+			if is_intersect:				
 				point.additional_info["marked"] = True
 				point_added = False
 				
@@ -221,17 +260,18 @@ class Polygon:
 				if point_added:
 					left_shape.addPoint(point)
 					right_shape.addPoint(point)
-		
 
+		
 		if len(intersect_points) == 0:
 			return {"is_intersect": False}
 		elif len(intersect_points) == 1:
 			return {"is_intersect": True, "one_vertex":intersect_points[0]}
 		
-		left_square = left_shape.get_square()
-		right_square = right_shape.get_square()
+		left_perimentr = left_shape.get_perimeter_length()		
+		right_perimentr = right_shape.get_perimeter_length()
 		
-		smaller_shape = left_shape if left_square < right_square else right_shape
+		is_left_shape = left_perimentr < right_perimentr
+		smaller_shape = left_shape if is_left_shape else right_shape
 
 		min_inter_point = Point(0,0)
 		max_inter_point = Point(0,0)
@@ -254,37 +294,22 @@ class Polygon:
 				point.additional_info["min"] = True
 			elif max_inter_point.equal(point):
 				point.additional_info["max"] = True
-
 		
-		smaller_shape = self.__sort_marked_shape(smaller_shape)
+		smaller_shape = self.__sort_marked_shape(smaller_shape,is_left_shape)
 		
-		return {"is_intersect": True, "shape":smaller_shape}
+		return {"is_intersect": True,"is_left_shape": is_left_shape, "shape":smaller_shape}
+
+	def get_perimeter_length(self):
+		common_length = 0
+		for item_index in range(0,len(self.points)-1):
+			p1 = self.points[item_index]
+			p2 = self.points[item_index+1]
+			line = Line(p1,p2)
+			common_length += line.length()
+		return common_length
 
 
-	def transform_to_table(self):
-		table = []
-		for top in self.points:
-			table.append(top)
-
-		table.append(self.points[0])
-		return table
-
-
-	def get_square(self):
-		table = self.transform_to_table()
-		xy_sum = 0;
-		yx_sum = 0
-		for item_index in range(0,len(table)-1):
-			p1 = table[item_index]
-			p2 = table[item_index+1]
-			
-			xy_sum += p1.x*p2.y            
-			yx_sum += p1.y*p2.x
-
-		square = (xy_sum - yx_sum) / 2
-		return square
-
-	def __sort_marked_shape(self,shape):
+	def __sort_marked_shape(self,shape,is_left_direction):
 		sorted_shape = Polygon([])
 
 		first_point_index = 0
@@ -298,9 +323,16 @@ class Polygon:
 				last_point_index = i
 			i += 1
 
+		#print "\ncheck point 1\n"
+		#print "first_point_index ",first_point_index
+		#print "last_point_index ",last_point_index
+
 		#select direction
 		left_index = first_point_index - 1 if first_point_index != 0 else len(shape.points) - 1
 		right_index = first_point_index + 1 if first_point_index != len(shape.points) - 1 else 0 
+
+		#print "left_index ",left_index
+		#print "right_index ",right_index
 
 		direction = 0
 		if not shape.points[left_index].additional_info.has_key("marked") and shape.points[right_index].additional_info.has_key("marked"):
@@ -309,13 +341,20 @@ class Polygon:
 			direction = 1
 
 		if direction == 0:
-			return None
+			direction = -1 if is_left_direction else 1				
+
+		#print "\ncheck point 2\n"
 
 		i = first_point_index
 
 		while 1:
 			new_point = shape.points[i]
-			sorted_shape.addPoint(new_point)
+
+			count = len(sorted_shape.points)
+			new_equal_to_old = new_point.equal(sorted_shape.points[-1]) if count > 0 else False
+
+			if not new_equal_to_old:
+				sorted_shape.addPoint(new_point)		
 
 			if i == last_point_index:
 				break
@@ -329,6 +368,9 @@ class Polygon:
 		return sorted_shape
 
 
+#-------------------------------------------------------
+#---   	    			TESTS 
+#-------------------------------------------------------
 
 def angle_test(parts,x0,y0):
 	#quick angle test
@@ -362,53 +404,54 @@ def square_test():
 def sort_shape_test():
 	# points = [[-2,0],[0,-2],[4,-1],[1,0],[5,2],[0,5],[-2,3]]
 
-	points = [[-2,0],[0,0],[5,5],[0,4]]
+	points = [[1,1],[3,1],[3,3],[1,3]]
 	shape = Polygon(points)
 
-	x0 = -2
-	y0 = -2
+	x0 = 1
+	y0 = 0
 
-	for i in range(0,46):
-		deg = i 
-		print "TEST FOR ",deg," DEGREE\n"
+	for i in range(89,92):
+		deg = i
+		print "\n\n------------------------\nTEST FOR ",deg," DEGREE\n"
 
 		x = x0 + math.cos(deg*math.pi/180)
 		y = y0 + math.sin(deg*math.pi/180)
 		p1 = Point(x0,y0)
 		p2 = Point(x,y)
-		line = Line(p1,p2) # check all there
+		line = Line(p1,p2) 
 			
 		lin_fun = LiniarFunction(line)
 
 		inter_dict = shape.getSmallerShapeDevidedByFundtion(lin_fun)
 		
 		if inter_dict["is_intersect"]:
-			if inter_dict.has_key("shape"):			
-				print "\n\nDivided shape ",inter_dict["shape"]
+			if inter_dict.has_key("one_vertex"):
+				p = inter_dict["one_vertex"]
+				p.log()
+			if inter_dict.has_key("shape"):	
+				print "\n\n-----------------\nIs left Shape: ",inter_dict["is_left_shape"]						
 				inter_dict["shape"].log()
 		else:
 			print "Don't intersect"
 
+def test_height():
+	p1 = Point(0,0)
+	p2 = Point(5,0)
+	p3 = Point(2,-2)
+	
+	line = Line(p1,p2)
+	h = line.height_to_point(p3)
+	print "height ",h
+
+	line.log()
+
+	hp = line.point_of_height_vertex_to_right_direction(h,False)
+	hp.log()
+
 
 
 if __name__=='__main__':
-
 	#angle_test(4,0,0)
 	#square_test()
 	sort_shape_test()
-
-	
-
-
-
-	
-
-	
-
-
-	
-
-	
-
-
-    
+	#test_height()

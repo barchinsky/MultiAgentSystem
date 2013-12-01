@@ -1,81 +1,74 @@
 #!/usr/bin/env python
 
 import math
-
-barrier = [[-3,-2],[-1,4],[6,1],[3,10],[-4,9]]
+import Geometry
 
 class Brain:
     def __init__(self):
-        self._barrier = []
-        self._table = []
+        self._pos_x=0
+        self._pos_y=0        
+        self.main_direction_angle = 0
+        self._main_direction_setted = False
+        self._is_moving_back = False
+        self._is_food_found = False
+        self.__is_ant_stuck = False
+        self._passed_way=[]
+        self._new_way = []
+        self._bypass_way = []
+        self._success_way_distance=1000000000000000.0
+
+    def setPosition(self,x,y):
+        self._is_ant_stuck = False
+        self._pos_x = x
+        self._pos_y = y
+
+        if not self._is_food_found:
+            self._passed_way.append([x,y])
+
+    def antStucked(self):
+        self.__is_ant_stuck = True
+
+        # direction = random.uniform(-1,1)
+        # self._direction_angel -= random.randint(60,100)*[-1,direction][bool(direction)]
+
+    def foodFound(self):
+        self._is_food_found = True
+        self._success_way_distance = self.find_way_length( self._passed_way )
+
+        self._is_moving_back = True
+                
         pass
 
-    def set_barrier(self,barrier):
-        self._barrier = barrier
+    def setBarriers(self,barriers):
+        if self._is_ant_stuck == True:
+            #TODO: calculate bypass way
+        pass
 
-    def print_barrier(self,barrier):
-        print "Brain::print_barrier"
-        for top in barrier:
-            x,y = top
-            print x,y
-        print "End."
+    def getNextStepInfo(self):
+        pass
 
-    def transform_to_table(self):
-        for top in self._barrier:
-            self._table.append(top)
+    def getNextDirection(self):
+        if len(self._bypass_way) == 0:
+            if not self._main_direction_setted or self._is_ant_stuck:
+                self.main_direction_angle = random.randint(0,360) * math.pi / 180.0
+                self._main_direction_setted = True
 
-        self._table.append(barrier[0])
-        self.print_barrier(self._table)
-    
-    def get_square(self):
-        xy_sum = 0;
-        yx_sum = 0
-        for item_index in range(0,len(self._table)-1):
-            x1,y1 = self._table[item_index]
-            x2,y2 = self._table[item_index+1]
+            deflection_direction = (random.randint(0,10) - 5 )* math.pi / 180.0
+            result = self._main_direction_setted + deflection_direction 
+        pass
+        
 
-            #print x1,y1,x2,y2
-            xy_sum += x1*y2
-            print "x1*y2",x1,y2,x1*y2
-            yx_sum += y1*x2
-            print "y2*x1",y2,x1
+    def getNextPosition(self):
+        pass
 
-        print xy_sum,yx_sum
-        total_sum =  xy_sum - yx_sum
-        print "xy_sum - yx_sum",total_sum
-        print "square=",total_sum/2
+    def find_way_length(self,way):        
+        way_len = 0
+        for i in xrange(len(way)-1):
+            cur_point = way[i]
+            next_point = way[i+1]
+            way_len += math.sqrt(pow(next_point[0]-cur_point[0],2)+pow(next_point[1]-cur_point[1],2))
+        return way_len
 
-    def is_lines_cross(self,Pa1,Pa2,Pb1,Pb2):
-        x1,y1 = Pa1
-        x2,y2 = Pa2
-        x3,y3 = Pb1
-        x4,y4 = Pb2
 
-        Ua = ( (x4-x3)*(y1-y3) - (y4-y3)*(x1-x3) ) / ( (y4-y3)*(x2-x1) - (x4-x3)*(y2-y1) )
-        Ub = ( (x2-x1)*(y1-y3) - (y2-y1)*(x1-x3) ) / ( (y4-y3)*(x2-x1) - (x4-x3)*(y2-y1) )
-
-        print Ua,Ub
-
-        X = x1 + Ua*(x2-x1)
-        Y = y1 + Ua*(y2-y1)
-
-        print X,Y
 
         
-        dx1 = x2-x1
-        dy1 = y2-y1
-        K1 = dx1/dy1
-        print "K1=%s"%str(K1)
-
-
-
-
-
-
-if __name__ == "__main__":
-    brain = Brain()
-    brain.set_barrier(barrier)
-    brain.print_barrier(barrier)
-    brain.transform_to_table()
-    brain.get_square()
-    brain.is_lines_cross([3,2.5],[4.5,3.5],[2.5,3.5],[5.5,3.5])

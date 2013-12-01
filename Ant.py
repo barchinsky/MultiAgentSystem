@@ -14,6 +14,7 @@ import json
 import warnings
 import math
 import random
+from Brain import *
 
 sys.path.append('templates')
 from templates import *
@@ -68,19 +69,9 @@ class Ant(threading.Thread):
 
         self._external_id = exteranl_id
         self._id=int(time.time())
-        self._pos_x=0
-        self._pos_y=0
 
-        self._passed_way=[] # array of passed way (x,y) coordinate to resource dislocation
-        self._success_way=[] # keep successful way
-        self._new_way = []
-        self._success_way_distance=1000000000000000.0
-
-        self._direction_angel = 180 + random.randint(-150,150)# direction angel, using for defining direction in get_possible_direction()
-
-        self._is_moving_back = False # True if move back to base
-        self._is_food_found = False
-
+        self._brain = Brain()
+        
         #self.ping_server(self._server_host,self._port) # stop main thread if host unreachable
 
         self.server_thread = threading.Thread(target=self.server)
@@ -269,23 +260,19 @@ class Ant(threading.Thread):
         if api_key == "registration":
             #print "Registration section found."
  
-            self._pos_x,self._pos_y = j["OBJECT"]["COORD_ANT"]
+            x,y = j["OBJECT"]["COORD_ANT"]
+            self._brain.setPosition(x,y)
             #print "Coordinates",self._pos_x, self._pos_y
 
         if api_key == "is_ant_can_move":
             #print "process_response::Is ant can move processing."
             if len(j["OBJECT"].items()) > 0 :
                 #print "**process_response::Ant can move. Set direction to 45 degree."
-                #self._direction_angel = 18,,0
                 x,y = j["OBJECT"]["COORD_ANT"]
-                #print "X,Y",x,y
-
-                #print "process_response::New coordinates goted:",x,y
-                self._pos_x=x
-                self._pos_y=y
-                if not self._is_food_found:
-                    self._passed_way.append([x,y])
+                self._brain.setPosition(x,y)
+                #print "process_response::New coordinates goted:",x,y                
             else:
+                self._brain.antStucked()
                 #print "**process_response::Can't move with last direction... Choose another direction."
                 direction = random.uniform(-1,1)
 
@@ -429,8 +416,8 @@ class Ant(threading.Thread):
         rad = random.randint(0,360)
         #print "get_posible_direction::self._direction_angel=%s"%str((self._direction_angel))
 
-        vector_x = math.cos(K*(self._direction_angel)/4)
-        vector_y = math.sin(K*(self._direction_angel)/4)
+        vector_x = math.cos(K*(self._brain.main_direction_angle)/4)
+        vector_y = math.sin(K*(self._brain.main_direction_angle)/4)
         self.send(self.create_is_ant_can_move_query(vector_x, vector_y))
 
     def move(self):
