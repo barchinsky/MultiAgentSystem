@@ -80,6 +80,7 @@ class Ant(threading.Thread):
 
         self._is_moving_back = False # True if move back to base
         self._is_food_found = False
+        self.start_time = time.time() # check conversation time delay
 
         #self.ping_server(self._server_host,self._port) # stop main thread if host unreachable
 
@@ -97,7 +98,7 @@ class Ant(threading.Thread):
         print 'Server is working...'
         server_host = self._server_host
         self._server_port = self.get_unused_port()
-        print self._server_port
+        print "server::Server port is %s"%str(self._server_port)
 
         try:
             #print "server::Try section"
@@ -110,7 +111,7 @@ class Ant(threading.Thread):
             ssocket.listen(1000)
             #print "socker listen"
             #conn, addr = ssocket.accept()
-            print "socket accept"
+            #print "socket accept"
             while True:
                 ssocket.setblocking(0)
                 timeout = 1
@@ -130,9 +131,9 @@ class Ant(threading.Thread):
                     if data:
                         total_data.append(data)
                         start_time = time.time()
-                        print "server()::Data not empty. Continue...",data
+                        #print "server()::Data not empty. Continue...",data
                         if self.is_client_request(data) : # if current message is request - send response
-                            print "server()::request goted."
+                            #print "server()::request goted."
                             print "Food found=",self._is_food_found
                             if self._is_food_found: # response if success way exists
                                 print 'server()::success way exists. Perform response generating...'
@@ -144,22 +145,22 @@ class Ant(threading.Thread):
                                 print "server()::No success way found. Response NOT sended."
                                 #conn.send("Null data")
                                 conn.close()
-
+                        '''
                         else: # process response
                             print "server()::Response received.",data
                             j = json.dumps(data)
                             print "Json",str(j)
                             way_length = j["OBJECT"]["WAY_LENGTH"]
-                            #print "////////////",type(way_length),way_length
                             print "way length %s"%str(way_length)
                             
                             if way_length < self._success_way_distance: # if new way is better
                                 print "server()::New way is better. Update success way."
                                 print "server()::",type(j["OBJECT"]["WAY_COORDS"])
                                 self._new_way = j["OBJECT"]["WAY_COORDS"]
-                                self.go_home("from server")
+                                #self.go_home("from server")
                                 #self._success_way_distance = j["OBJECT"]["WAY_COORDS"] # update success way
                                 conn.close()
+                                '''
                     else:
                         print "server::connection lost"
                         ssocket.close()
@@ -222,7 +223,7 @@ class Ant(threading.Thread):
         #print "Ant connecting to main server..."
         try:
             self.client_socket.connect((host,int(port))) # connect to host
-            #print "Connected."
+            print "client()::Connected:%s"%(str(port))
         except Exception,e:
             #print "Connection failed:",str(e)
             sys.exit()
@@ -263,6 +264,7 @@ class Ant(threading.Thread):
         Process all responses from server.
         '''
         j = json.loads(response)
+        #print j
         
         api_key = j["API_KEY"]
 
@@ -316,27 +318,29 @@ class Ant(threading.Thread):
                     #raw_input("Food found.")
 
                 if len(ants) > 0: # if there is ants
-                    print "process_response()::ants found"
-                    for ant in ants: # generate success way request
-                        sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                    if time.time() - self.start_time > 5: # if conversation time delay is passed
+                        print "process_response()::ants found"
+                        for ant in ants: # generate success way request
+                            sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-                        ant_socket = ant["SOCKET"]
-                        print "ant socket goted",ant_socket
-                        host,port = ant_socket.split(":")
-                        try:
-                            sock.connect( (host,int(port)) )
-                            sock.sendall( self.create_get_found_way_request_query() ) # send request about passed way
-                            print "Request sended to port",port
-                            data = sock.recv(1024**2)
-                            if data:
-                                print "WOWW"
-                                print "Ants intersects, data transmition completed."
-                                self.process_ant_response(data)
-                                
-                            sock.close()
-                        except Exception,e:
-                            print "process_response()::sock.sendall(*) error occured.",str(e),"port:",port
-                        print "ip:%s,port:%s"%(host,port)
+                            ant_socket = ant["SOCKET"]
+                            print "ant socket goted",ant_socket
+                            host,port = ant_socket.split(":")
+                            try:
+                                sock.connect( (host,int(port)) )
+                                sock.sendall( self.create_get_found_way_request_query() ) # send request about passed way
+                                print "Request sended to port",port
+                                data = sock.recv(1024**2)
+                                if data: # respose goted
+                                    self.start_time = time.time()
+                                    print "WOWW"
+                                    print "Ants intersects, data transmition completed."
+                                    self.process_ant_response(data)
+                                    
+                                sock.close()
+                            except Exception,e:
+                                print "process_response()::sock.sendall(*) error occured.",str(e),"port:",port
+                            print "ip:%s,port:%s"%(host,port)
             else:
                 print "No objects found. Go on..."
         if api_key == "get_found_way":
@@ -364,17 +368,15 @@ class Ant(threading.Thread):
             if float(way_length) < self._success_way_distance: # if new way is better
                 print "server()::New way is better. Update success way."
                 print "server()::",type(j["OBJECT"]["WAY_COORDS"])
-                #self._new_way = j["OBJECT"]["WAY_COORDS"]
-                #self.go_home("from server")
+                self._new_way = j["OBJECT"]["WAY_COORDS"]
+                print "new_way_goted::",self._new_way
+                self.go_home("gohomefromserver")
                 #conn.close()
-                print "gohomefromserver"
+                #print "gohomefromserver"
             else:
                 print 'new way length:%s. Own way length:%s'%(way_length,self._success_way_distance)
         except Exception,e:
             print "process_ant_response::%s"%(str(e))
-
-
-
 
     def get_socket(self):
         return str(self._server_host)+':'+str(self._server_port)
