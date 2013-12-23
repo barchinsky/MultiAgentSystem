@@ -39,12 +39,13 @@ public:
     float getAntStep();
 
     QPointF antBornPoint();
-    QPointF nextPositionForAnt(Client *ant);
+    QPointF nextPositionForAnt(Client *ant, bool *isStucked);
 
     NearObjects nearObjectsForAnt(Client *ant);
     QVector<QPolygonF> barriersNearAntPolygon(QPolygonF &antPolygon);
     QPolygonF foodPositionsNearAntPolygon(QPointF &checkPoint);
-    QVector<Client *> antsNearAntPolygon(QPolygonF &antPolygon);
+    QVector<Client *> antsNearAntPolygon(Client *inputAnt, QPolygonF &antPolygon);
+    bool antTryCutTheFood(Client *ant);
 
 
 private:
@@ -56,7 +57,7 @@ private:
     float _antStep;
     float _antLookingRadius;
 
-    QPolygonF _foodPositions;
+    QList<QPolygonF> _foodPositions;
     QPolygonF _diedAntsPositions;
     QList<QPolygonF> _barrierPostions;
     QList<Feromon *> _feromons;

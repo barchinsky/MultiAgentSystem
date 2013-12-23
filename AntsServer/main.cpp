@@ -1,8 +1,7 @@
 #include "map.h"
 #include <QApplication>
-
-#include <QPolygonF>
 #include <QDebug>
+
 
 int main(int argc, char *argv[])
 {

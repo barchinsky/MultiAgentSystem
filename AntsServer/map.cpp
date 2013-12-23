@@ -25,7 +25,7 @@ Map::Map(QWidget *parent) :
 
         _antsCount = 0;
         _antStep = 0.01;
-        _antLookingRadius = 0.05;
+        _antLookingRadius = 0.2;
 
         setupFood();
         setupBarriers();
@@ -138,34 +138,45 @@ QPointF Map::antBornPoint()
     return bornPoint;
 }
 
-QPointF Map::nextPositionForAnt(Client *ant)
+QPointF Map::nextPositionForAnt(Client *ant,bool *isStucked)
 {
     QPointF nextPosition = ant->getPosition() + ant->getDircetion() * _antStep;
+    QPointF fewAntSteps = ant->getPosition() + ant->getDircetion() * _antStep*2;
+    *isStucked = true;
+
     QPolygonF mapBorder;
     mapBorder << QPointF(0.0,0.0) << QPointF(1.0,0.0) << QPointF(1.0,1.0) << QPointF(0.0,1.0);
     if (!mapBorder.containsPoint(nextPosition,Qt::OddEvenFill)) {
+        qDebug()<<"containsPoint in mapBorder";
         return ant->getPosition();
     }
 
     foreach (QPolygonF barrier, _barrierPostions) {
-        if (barrier.containsPoint(nextPosition,Qt::OddEvenFill)) {
+        if (barrier.containsPoint(fewAntSteps,Qt::OddEvenFill)) {
+            qDebug()<<"containsPoint in barrier";
             return ant->getPosition();
         }
     }
 
-    if (_foodPositions.containsPoint(nextPosition,Qt::OddEvenFill)) {
-        return ant->getPosition();
+    foreach (QPolygonF food, _foodPositions) {
+        if (food.containsPoint(nextPosition,Qt::OddEvenFill)) {
+            qDebug()<<"containsPoint in food";
+            return ant->getPosition();
+        }
     }
 
+
+
+    *isStucked = false;
     return nextPosition;
 }
 
 NearObjects Map::nearObjectsForAnt(Client *ant)
-{
+{   
     NearObjects objects;
 
-    int sectorsCount = 8;
-    float radianStep = 3.14 / (float)sectorsCount;
+    int sectorsCount = 6;
+    float radianStep = 2*M_PI / (float)sectorsCount;
 
     float x0,y0,x,y;
     x0 = ant->getPosition().x();
@@ -180,7 +191,7 @@ NearObjects Map::nearObjectsForAnt(Client *ant)
         antPolygon << QPointF(x,y);
     }
 
-    objects.ants = antsNearAntPolygon(antPolygon);    
+    objects.ants = antsNearAntPolygon(ant,antPolygon);
     objects.barriers = barriersNearAntPolygon(antPolygon);
 
     QPointF antsMouthPosition = ant->getAntMouthPosition();
@@ -205,25 +216,68 @@ QVector<QPolygonF> Map::barriersNearAntPolygon(QPolygonF &antPolygon)
 
 QPolygonF Map::foodPositionsNearAntPolygon(QPointF &checkPoint)
 {
-    if (_foodPositions.containsPoint(checkPoint,Qt::OddEvenFill)) {
-        return _foodPositions;
+    foreach (QPolygonF foodPol, _foodPositions) {
+        if (foodPol.containsPoint(checkPoint,Qt::OddEvenFill)) {
+            return foodPol;
+        }
     }
+
     return QPolygonF(0);
 }
 
-QVector<Client *> Map::antsNearAntPolygon(QPolygonF &antPolygon)
+QVector<Client *> Map::antsNearAntPolygon(Client *inputAnt, QPolygonF &antPolygon)
 {
     QVector<Client *> nearAnts;
 
-    foreach (Client *ant, _serv->_clients) {
-        if (ant->isWithFood()) {
-            if (antPolygon.containsPoint(ant->getPosition(),Qt::OddEvenFill)) {
-                nearAnts << ant;
+    if (inputAnt->isCanPutFeromon()) {
+        foreach (Client *ant, _serv->_clients) {
+            if (inputAnt != ant && ant->isCanPutFeromon()) {
+                if (antPolygon.containsPoint(ant->getPosition(),Qt::OddEvenFill)) {
+                    nearAnts << ant;
+                    break;
+                }
             }
         }
     }
 
     return nearAnts;
+}
+
+bool Map::antTryCutTheFood(Client *ant)
+{
+    QPointF mouthPosition = ant->getAntMouthPosition();
+
+    QPolygonF foodForEating = foodPositionsNearAntPolygon(mouthPosition);
+
+    if (foodForEating.count() == 0) {
+        return false;
+    } else {
+        QPointF direction = ant->getDircetion();
+
+        float rad_step = M_PI * 2.0 / 3.0;
+        float start_rad = qAcos(direction.x());
+        float cutRadius = 2 * antScaleFactor();
+
+        QPolygonF cutRegion;
+        for (int i = 0; i<3; i++) {
+            float x = mouthPosition.x() + cutRadius * qCos(start_rad + rad_step*i);
+            float y = mouthPosition.y() + cutRadius * qSin(start_rad + rad_step*i);
+            cutRegion << QPointF(x,y);
+        }
+
+        QList<QPolygonF> cutPolygons = Math::dividePolygonByPolygon(foodForEating,cutRegion);
+
+        int index = _foodPositions.indexOf(foodForEating);
+        _foodPositions.removeAt(index);
+
+        foreach (QPolygonF newPol, cutPolygons) {
+            _foodPositions.append(newPol);
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 // private methods
@@ -233,11 +287,13 @@ void Map::setupFood()
     Point cloverCenter;
     cloverCenter.x = 0.78;
     cloverCenter.y = 0.78;
-    _foodPositions = polygonForClover(cloverCenter,0.2,30.0);
+    QPolygonF baseFood  = polygonForClover(cloverCenter,0.2,30.0);
+    _foodPositions << baseFood;
 }
 
 void Map::setupBarriers()
 {
+    /*
     QPolygonF barrier1;
     barrier1 << QPointF(0.15,0.52);
     barrier1 << QPointF(0.43,0.48);
@@ -275,16 +331,35 @@ void Map::setupBarriers()
     _barrierPostions.append(barrier2);    
     _barrierPostions.append(barrier3);    
     _barrierPostions.append(barrier4);    
-    _barrierPostions.append(barrier5);    
+    _barrierPostions.append(barrier5);
+    */
+
+    QPolygonF testBarrier;
+     // Simple TEST
+    testBarrier << QPointF(0.3,0.1);
+    testBarrier << QPointF(0.4,0.2);
+    testBarrier << QPointF(0.2,0.4);
+    testBarrier << QPointF(0.1,0.3);
+
+/*
+    // hard test
+    testBarrier << QPointF(0.3,0.1);
+    testBarrier << QPointF(0.5,0.1);
+    testBarrier << QPointF(0.5,0.3);
+    testBarrier << QPointF(0.4,0.35);
+    testBarrier << QPointF(0.6,0.35);
+    testBarrier << QPointF(0.2,0.6);
+    testBarrier << QPointF(0.2,0.4);
+    testBarrier << QPointF(0.05,0.5);
+*/
+//    _barrierPostions.append(testBarrier);
 }
 
 void Map::onUpdateAntsFeromons()
 {
     QList<Client *> ants = _serv->_clients;
-    qDebug() << "onUpdateAntsFeromons";
 
-    foreach (Client *client, ants) {
-        qDebug() << "isCanPutFeromon" << client->isCanPutFeromon();
+    foreach (Client *client, ants) {        
         if (client->isCanPutFeromon()) {
             Feromon *newFeromon = new Feromon(client->getPosition());
             connect(newFeromon,SIGNAL(disappearFeromon(Feromon*)),this,SLOT(onDisappearFeromon(Feromon*)));
@@ -350,8 +425,13 @@ void Map::drawAnts()
             }
 
             glEnd();
-
         }
+
+        // test draw mouth position
+//        glBegin(GL_POINTS);
+//        QPointF mouth = ant->getAntMouthPosition();
+//        glVertex2f(mouth.x(),mouth.y());
+//        glEnd();
     }
 }
 
@@ -359,13 +439,15 @@ void Map::drawAnts()
 void Map::drawFood()
 {
     qglColor(Qt::green);
-    glBegin(GL_LINE_LOOP);
-    {
-        foreach (QPointF foodPoint, _foodPositions) {
-            glVertex2f(foodPoint.x(),foodPoint.y());
+    foreach (QPolygonF foodPol, _foodPositions) {
+        glBegin(GL_LINE_LOOP);
+        {
+            foreach (QPointF foodPoint, foodPol) {
+                glVertex2f(foodPoint.x(),foodPoint.y());
+            }
         }
+        glEnd();
     }
-    glEnd(); 
 }
 
 void Map::drawBarries()

@@ -9,6 +9,7 @@
 #define kJSON_COORD_ANT    QString("COORD_ANT")
 #define kJSON_COORD_BASE   QString("COORD_BASE")
 #define kJSON_NEXT_COORD   QString("NEXT_COORD")
+#define kJSON_STEP_LENGTH  QString("STEP_LENGTH")
 #define kJSON_VECTOR       QString("VECTOR")
 #define kJSON_ID           QString("ID")
 #define kJSON_ANTS         QString("ANTS")

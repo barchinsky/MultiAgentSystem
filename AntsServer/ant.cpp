@@ -75,7 +75,7 @@ void Ant::onPositionChanged(QPointF center, QPointF vector)
     _direction = angleInRad * 180 / M_PI - 90;
     setupShape();
 
-    _mouthPosition = _center + vector * _scale * 1.1;
+    _mouthPosition = _center + vector * _scale * 1.5;
 }
 
 // private

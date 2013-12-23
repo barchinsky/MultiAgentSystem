@@ -15,7 +15,7 @@ static Point clover[cloverPointsCount] =
     {-0.20,-1.00},
     { 0.00,-1.00},
     { 0.10,-0.50},
-    { 0.00, 0.00},
+    { 0.01, 0.00},
     // right leaflet
     { 0.30,-0.30},
     { 0.75,-0.40},
@@ -39,7 +39,7 @@ static Point clover[cloverPointsCount] =
     {-0.75,-0.40},
     {-0.30,-0.30},
     //root end
-    { 0.00, 0.00},
+    { -0.01, 0.00},
     {-0.05,-0.60}
 };
 

@@ -8,13 +8,14 @@
 #include <qjsonvalue.h>
 
 #include <QPointF>
-
+#include <QSemaphore>
 
 #include "client.h"
 #include "constants.h"
 #include "map.h"
 
 #include "helpmath.h"
+
 
 Server::Server(Map *map, QObject *parent) :
     QTcpServer(parent)
@@ -87,6 +88,9 @@ QByteArray Server::registerClient(Client *ant, QJsonObject jsonObject)
     coordArray[1] = QJsonValue(y);
     coord.insert(kJSON_COORD_BASE,QJsonValue(coordArray));
 
+    double stepLength = _map->getAntStep();
+    coord.insert(kJSON_STEP_LENGTH,QJsonValue(stepLength));
+
     coordJSON.insert(kJSON_OBJECT,QJsonValue(coord));
     QJsonDocument json(coordJSON);
 
@@ -109,6 +113,9 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
         if (isRightDirection(antX,antY,x,y)) {
             isCanMove = true;
             direction = Math::directionFromPointToPoint(antX,antY,x,y);
+//            qDebug() << "ant position " << antX<<"\t"<<antY<<'\n';
+//            qDebug() << "next position " << x<<"\t"<<y<<'\n';
+//            qDebug() << "direction " << direction.x()<<'\t'<<direction.y()<<'\n';
         }
 
     } else if (getCoords(&x,&y,vectorValue)) {
@@ -118,10 +125,14 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
         }
     }
 
-    if (isCanMove) {        
-        QPointF previousPosition = ant->_position;
+//    qDebug() << "isCanMove " << isCanMove;
+
+    if (isCanMove) {
         ant->_direction = direction;
-        QPointF newPosition = _map->nextPositionForAnt(ant);
+        bool isStucked = false;
+        QPointF newPosition = _map->nextPositionForAnt(ant,&isStucked);
+
+//        qDebug() << "isStucked " << isStucked;
 
         ant->setPositionAndDirection(newPosition,direction);
 
@@ -131,7 +142,7 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
 
         QJsonObject ant_coord;
 
-        if (previousPosition != newPosition) {
+        if (!isStucked) {
             QJsonArray coordArray;
             coordArray.push_back(QJsonValue(newPosition.x()));
             coordArray.push_back(QJsonValue(newPosition.y()));
@@ -161,7 +172,10 @@ QByteArray Server::isGotFood(Client *ant)
     QJsonDocument json(JsonObject);
 
     qDebug() << "Food GOT";
-    ant->setWithFood(true);
+
+    bool isGotValue = _map->antTryCutTheFood(ant);
+
+    ant->setWithFood(isGotValue);
 
     return json.toJson();
 }
@@ -280,8 +294,8 @@ bool Server::doStartServer(QHostAddress addr, qint16 port)
 void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 {
     QString str(byteArray);
-//    TRACE("parse Data from client %d", client->getID());
-//     qDebug()<< str;
+    TRACE("parse Data from client %d", client->getID());
+    qDebug() << str;
 
     QJsonDocument d = QJsonDocument::fromJson(str.toUtf8());
 
@@ -311,8 +325,8 @@ void Server::parseDataFromClient(Client *client, QByteArray byteArray)
 
 void Server::sendDataToClient(Client *client, QByteArray byteArray)
 {
-//    TRACE("send Data To client %d", client->getID());
-//    qDebug()<< QString(byteArray);
+    TRACE("send Data To client %d", client->getID());
+    qDebug()<< QString(byteArray);
     client->sendData(byteArray);
 }
 

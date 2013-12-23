@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import math
 
-
 class Point:	
 	def __init__(self, x, y):
 		self.additional_info = {}
@@ -14,6 +13,12 @@ class Point:
 		point.y += point2.y
 		return point
 
+	def move_in_direction_with_length(self,direction,length = 1):		
+		x = self.x + length * math.cos(direction)
+		y = self.y + length * math.sin(direction) 
+		return Point(x,y)
+
+
 	def sub(self,point2):
 		point = Point(self.x,self.y)
 		point.x -= point2.x
@@ -23,6 +28,9 @@ class Point:
 	def equal(self,point):
 		EPS = 1e-9
 		return ((point.x - EPS <= self.x <= point.x + EPS) and (point.y - EPS <= self.y <= point.y + EPS))
+
+	def getArr(self):
+		return [self.x, self.y]
 
 	def log(self):
 		print "Point ",self," (",self.x,",",self.y,")"
@@ -93,10 +101,18 @@ class Line:
 		return Point(hx,hy)
 
 class Vector:		
-	def __init__(self, p1, p2):		
-		coord = p2.sub(p1)
-		self.x = coord.x
-		self.y = coord.y
+	def __init__(self, p1 = None, p2 = None):		
+		if p1 and p2:
+			coord = p2.sub(p1)
+			self.x = coord.x
+			self.y = coord.y
+		else:
+			self.x = 0
+			self.y = 0
+
+	def setAngleAndLength(self,radian, length = 1):
+		self.x = length * math.cos(radian)
+		self.y = length * math.sin(radian)
 
 	def length(self):
 		x = self.x
@@ -109,18 +125,22 @@ class Vector:
 				angle = math.pi*2 + angle 
 		return angle
 
+	def getArr(self):
+		return [self.x, self.y]
+
 
 class LiniarFunction:	
-	def __init__(self, line):		
-		self.setLine(line)
+	def __init__(self, line = None):
+		if line:
+			self.setLine(line)
 
 	def setLine(self,line):
 		self.line = line
 		self.__calculate_function()
 
 	def setPointAndAngle(self,point,angle):
-		x2 = point.x + cos(angle)
-		y2 = point.y + sin(angle)
+		x2 = point.x + math.cos(angle)
+		y2 = point.y + math.sin(angle)
 		self.line = Line(point,Point(x2,y2))
 		self.__calculate_function()
 		
@@ -226,14 +246,14 @@ class Polygon:
 			p2 = self.points[i+1] if (i + 1) < count else self.points[0]
 
 			#add already existed point to shape		
-			angle = Line(base_point,p1).getAngle()			
-			diff = start_angle - angle						
+			angle = Line(base_point,p1).getAngle()
+			start_angle_plus_pi = start_angle + math.pi
 
-			if diff == 0:				
+			if angle == start_angle:				
 				left_shape.addPoint(p1)
 				right_shape.addPoint(p1)
 			else:
-				if diff < 0:					
+				if start_angle < angle and angle <= start_angle_plus_pi:					
 					left_shape.addPoint(p1)
 				else:					
 					right_shape.addPoint(p1)
@@ -271,6 +291,13 @@ class Polygon:
 		right_perimentr = right_shape.get_perimeter_length()
 		
 		is_left_shape = left_perimentr < right_perimentr
+		# print "\n\n+++++++++++++++++++++++++++++\nTEST IS LEFT SHAPE ",is_left_shape
+		# print "\nleft shape:\n"
+		# left_shape.log()
+		# print "\nright shape:\n"
+		# right_shape.log()
+		# print "\n++++++++++++++++++++++++++++++++\n\n"
+
 		smaller_shape = left_shape if is_left_shape else right_shape
 
 		min_inter_point = Point(0,0)
@@ -392,47 +419,46 @@ def angle_test(parts,x0,y0):
 		print "result anlge: ",angle
 		print "diff ",rad - angle
 
-def square_test():
-	verticles = [[0,0],[2,2],[0,4],[0,6],[2,8],[0,10]]
 
-	print "Should be square 8"
-
-	shape = Polygon(verticles)
-	square = shape.get_square()
-	print "result square ",square
 
 def sort_shape_test():
 	# points = [[-2,0],[0,-2],[4,-1],[1,0],[5,2],[0,5],[-2,3]]
 
-	points = [[1,1],[3,1],[3,3],[1,3]]
+	points = [[0.2,0.2],[0.6,0.2],[0.6,0.6],[0.2,0.6]]
 	shape = Polygon(points)
 
-	x0 = 1
-	y0 = 0
+	
+	#for i in range(89,92):
+	deg = 80
+	rad = deg * math.pi / 180
+	print "\n\n------------------------\nTEST FOR ",deg," DEGREE\n"
 
-	for i in range(89,92):
-		deg = i
-		print "\n\n------------------------\nTEST FOR ",deg," DEGREE\n"
+	x0 ,y0 = 0.199448, 0.454525
+	#x0 ,y0 = 0.15, 0.15
 
-		x = x0 + math.cos(deg*math.pi/180)
-		y = y0 + math.sin(deg*math.pi/180)
-		p1 = Point(x0,y0)
-		p2 = Point(x,y)
-		line = Line(p1,p2) 
-			
-		lin_fun = LiniarFunction(line)
-
-		inter_dict = shape.getSmallerShapeDevidedByFundtion(lin_fun)
+	x = x0 + math.cos(deg*math.pi/180)
+	y = y0 + math.sin(deg*math.pi/180)
+	p1 = Point(x0,y0)
+	p2 = Point(x,y)
+	line = Line(p1,p2) 
 		
-		if inter_dict["is_intersect"]:
-			if inter_dict.has_key("one_vertex"):
-				p = inter_dict["one_vertex"]
-				p.log()
-			if inter_dict.has_key("shape"):	
-				print "\n\n-----------------\nIs left Shape: ",inter_dict["is_left_shape"]						
-				inter_dict["shape"].log()
-		else:
-			print "Don't intersect"
+	lin_fun = LiniarFunction(line)
+
+	selfLinFunc = LiniarFunction()
+	selfLinFunc.setPointAndAngle(Point(x0,y0),rad)
+
+
+	inter_dict = shape.getSmallerShapeDevidedByFundtion(selfLinFunc)
+	
+	if inter_dict["is_intersect"]:
+		if inter_dict.has_key("one_vertex"):
+			p = inter_dict["one_vertex"]
+			p.log()
+		if inter_dict.has_key("shape"):	
+			print "\n\n-----------------\nIs left Shape: ",inter_dict["is_left_shape"]						
+			inter_dict["shape"].log()
+	else:
+		print "Don't intersect"
 
 def test_height():
 	p1 = Point(0,0)
