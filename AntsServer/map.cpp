@@ -25,7 +25,7 @@ Map::Map(QWidget *parent) :
 
         _antsCount = 0;
         _antStep = 0.01;
-        _antLookingRadius = 0.2;
+        _antLookingRadius = 0.05;
 
         setupFood();
         setupBarriers();
@@ -83,11 +83,14 @@ void Map::resizeGL(int width, int height)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 #ifdef QT_OPENGL_ES_1
-    glOrthof(-0.1, 1.1, -0.1, 1.1, 1.0, 0.0);
+    glOrthof(-0.1, 1.1, -0.1, 1.1, -1.0, 1.0);
+
 #else
-    glOrtho(-0.1, 1.1, -0.1, 1.1, 1.0, 0.0);
-#endif
+//    glOrtho(-0.1, 1.1, -0.1, 1.1, 1.0, 0.0);
+    glOrtho(-0.1,1.1,-0.1,1.1,-1.1,1.1);
+#endif    
     glMatrixMode(GL_MODELVIEW);
+
 }
 
 void Map::paintGL()
@@ -95,8 +98,23 @@ void Map::paintGL()
    // TRACE("GL Draw");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // чистим буфер изображения и буфер глубины
     glLoadIdentity();
+/*
+//    glTranslatef(0.5,0.5,0.0);
+    glRotatef(45,1,0,0);
+
+    glTranslatef(-0.5,-0.5,0.0);
+
+    static float angle = 1;
+    angle += 2;
+    glRotatef(angle,0,0,1);
+//    glTranslatef(1,0.5,0.0);
+
+*/
+
 
     qglColor(Qt::black);
+
+
 
     drawBorder();
     renderText(0.01,1 + 2*_antStep,0.0,QString::fromUtf8("Ants count: %1").arg(_antsCount));
@@ -141,7 +159,7 @@ QPointF Map::antBornPoint()
 QPointF Map::nextPositionForAnt(Client *ant,bool *isStucked)
 {
     QPointF nextPosition = ant->getPosition() + ant->getDircetion() * _antStep;
-    QPointF fewAntSteps = ant->getPosition() + ant->getDircetion() * _antStep*2;
+    QPointF fewAntSteps = ant->getPosition() + ant->getDircetion() * _antStep*3;
     *isStucked = true;
 
     QPolygonF mapBorder;
@@ -293,65 +311,30 @@ void Map::setupFood()
 
 void Map::setupBarriers()
 {
-    /*
+
     QPolygonF barrier1;
-    barrier1 << QPointF(0.15,0.52);
-    barrier1 << QPointF(0.43,0.48);
-    barrier1 << QPointF(0.40,0.31);
-    barrier1 << QPointF(0.30,0.21);
+    barrier1 << QPointF(0.35,0.35);
+    barrier1 << QPointF(0.55,0.35);
+    barrier1 << QPointF(0.55,0.55);
+    barrier1 << QPointF(0.35,0.55);
 
     QPolygonF barrier2;
-    barrier2 << QPointF(0.50,0.38);
-    barrier2 << QPointF(0.52,0.24);
-    barrier2 << QPointF(0.45,0.21);
-    barrier2 << QPointF(0.43,0.30);
+    barrier2 << QPointF(0.1,0.45);
+    barrier2 << QPointF(0.25,0.45);
+    barrier2 << QPointF(0.25,0.65);
+    barrier2 << QPointF(0.1,0.65);
 
     QPolygonF barrier3;
-    barrier3 << QPointF(0.61,0.29);
-    barrier3 << QPointF(0.60,0.55);
-    barrier3 << QPointF(0.75,0.61);
-    barrier3 << QPointF(0.70,0.35);
-    barrier3 << QPointF(0.73,0.36);
-    barrier3 << QPointF(0.69,0.15);
+    barrier3 << QPointF(0.5,0.1);
+    barrier3 << QPointF(0.7,0.1);
+    barrier3 << QPointF(0.7,0.2);
+    barrier3 << QPointF(0.5,0.2);
 
-    QPolygonF barrier4;
-    barrier4 << QPointF(0.32,0.59);
-    barrier4 << QPointF(0.10,0.75);
-    barrier4 << QPointF(0.29,0.81);
-    barrier4 << QPointF(0.40,0.78);
-    barrier4 << QPointF(0.42,0.61);
+//    _barrierPostions.append(barrier1);
+//    _barrierPostions.append(barrier2);
+//    _barrierPostions.append(barrier3);
 
-    QPolygonF barrier5;
-    barrier5 << QPointF(0.50,0.15);
-    barrier5 << QPointF(0.60,0.10);
-    barrier5 << QPointF(0.40,0.09);
-    barrier5 << QPointF(0.45,0.14);
 
-    _barrierPostions.append(barrier1);        
-    _barrierPostions.append(barrier2);    
-    _barrierPostions.append(barrier3);    
-    _barrierPostions.append(barrier4);    
-    _barrierPostions.append(barrier5);
-    */
-
-    QPolygonF testBarrier;
-     // Simple TEST
-    testBarrier << QPointF(0.3,0.1);
-    testBarrier << QPointF(0.4,0.2);
-    testBarrier << QPointF(0.2,0.4);
-    testBarrier << QPointF(0.1,0.3);
-
-/*
-    // hard test
-    testBarrier << QPointF(0.3,0.1);
-    testBarrier << QPointF(0.5,0.1);
-    testBarrier << QPointF(0.5,0.3);
-    testBarrier << QPointF(0.4,0.35);
-    testBarrier << QPointF(0.6,0.35);
-    testBarrier << QPointF(0.2,0.6);
-    testBarrier << QPointF(0.2,0.4);
-    testBarrier << QPointF(0.05,0.5);
-*/
 //    _barrierPostions.append(testBarrier);
 }
 
@@ -375,10 +358,10 @@ void Map::drawBorder()
     float offset = antScaleFactor();
 
     glBegin(GL_LINE_LOOP);
-    glVertex2f(-offset,1+offset);
-    glVertex2f(1+offset,1+offset);
-    glVertex2f(1+offset,-offset);
-    glVertex2f(-offset,-offset);
+    glVertex3f(-offset,1+offset,0);
+    glVertex3f(1+offset,1+offset,0);
+    glVertex3f(1+offset,-offset,0);
+    glVertex3f(-offset,-offset,0);
     glEnd();
 }
 

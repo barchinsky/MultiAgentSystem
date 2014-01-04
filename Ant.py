@@ -246,8 +246,8 @@ class Ant(threading.Thread):
                 x,y = info[Brain.kPosition]
                 #print "send position x,y ",x,y
                 self.send(self.create_is_ant_can_move_query_using_coords(x,y))
-        # else:
-        #     self.movement() 
+        else:
+            self.movement() 
 
         
     def send(self,query):

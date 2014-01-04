@@ -113,9 +113,9 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
         if (isRightDirection(antX,antY,x,y)) {
             isCanMove = true;
             direction = Math::directionFromPointToPoint(antX,antY,x,y);
-//            qDebug() << "ant position " << antX<<"\t"<<antY<<'\n';
-//            qDebug() << "next position " << x<<"\t"<<y<<'\n';
-//            qDebug() << "direction " << direction.x()<<'\t'<<direction.y()<<'\n';
+            qDebug() << "ant position " << antX<<"\t"<<antY<<'\n';
+            qDebug() << "next position " << x<<"\t"<<y<<'\n';
+            qDebug() << "direction " << direction.x()<<'\t'<<direction.y()<<'\n';
         }
 
     } else if (getCoords(&x,&y,vectorValue)) {
@@ -125,14 +125,14 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
         }
     }
 
-//    qDebug() << "isCanMove " << isCanMove;
+    qDebug() << "isCanMove " << isCanMove;
 
     if (isCanMove) {
         ant->_direction = direction;
         bool isStucked = false;
         QPointF newPosition = _map->nextPositionForAnt(ant,&isStucked);
 
-//        qDebug() << "isStucked " << isStucked;
+        qDebug() << "isStucked " << isStucked;
 
         ant->setPositionAndDirection(newPosition,direction);
 
@@ -149,6 +149,17 @@ QByteArray Server::isAntCanMove(Client *ant, QJsonObject vectorObject)
             ant_coord.insert(kJSON_COORD_ANT,QJsonValue(coordArray));
         }
 
+        resultJSON.insert(kJSON_OBJECT,QJsonValue(ant_coord));
+
+        QJsonDocument json(resultJSON);
+
+        return json.toJson();
+    } else {
+        // create JSON
+        QJsonObject resultJSON;
+        resultJSON.insert(kJSON_API_KEY,QJsonValue(kAPI_is_ant_can_move));
+
+        QJsonObject ant_coord;
         resultJSON.insert(kJSON_OBJECT,QJsonValue(ant_coord));
 
         QJsonDocument json(resultJSON);
@@ -223,8 +234,11 @@ bool Server::isRightDirection(float x, float y)
 
 bool Server::isRightDirection(float x0, float y0, float x1, float y1)
 {
-    if (Math::length(x0,y0,x1,y1) > _map->getAntStep())
+
+    if (Math::length(x0,y0,x1,y1) > _map->getAntStep()) {
+        qDebug() << "_map->getAntStep() " << _map->getAntStep();
         return false;
+    }
     return true;
 }
 

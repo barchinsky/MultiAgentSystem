@@ -52,7 +52,7 @@ class Brain(object):
         self._position = Point(0,0)  
 
         self._previus_moving_state = self._current_moving_state = MovingState.searching  
-        self._main_direction_angle = degree_to_radian(random.randint(0,360))# degree_to_radian(10) #
+        self._main_direction_angle =degree_to_radian(random.randint(0,360))# degree_to_radian(10) #
 
         self._is_food_found = False        
         self._passed_way_index = 0      
@@ -91,10 +91,11 @@ class Brain(object):
                     print "\ntest self._temp_passed_way_to_new_food.append([x,y])"
                     self._temp_passed_way_to_new_food.append([x,y])
 
-    def setMovingState(self,movingState,previes_moving_state = None):
-        if not previes_moving_state:            
+    def setMovingState(self,movingState,previes_moving_state = -1):
+        if previes_moving_state == -1:            
             self._previus_moving_state = self._current_moving_state
         else:
+            print "SET PREVIUS MOVING STATE NOT CURRENT: "
             self._previus_moving_state = previes_moving_state
 
         self._current_moving_state = movingState
@@ -252,10 +253,11 @@ class Brain(object):
                 self._bypass_way = []
                 self._bypass_way_sector = 0
             else:
+                print "\n\nCHECK POINT: previus",self._previus_moving_state
                 self.setMovingState(MovingState.bypassing_moving,self._previus_moving_state)
                 print "self position"
                 self._position.log()
-                print "direction ",self._main_direction_angle,"\n\n"
+                print "direction ",self._main_direction_angle * 180.0 / math.pi,"\n\n"
                 for point in self._bypass_way:
                     point.log()
             return None
@@ -279,6 +281,7 @@ class Brain(object):
 
                 self._bypass_way_sector += 1
                 if self._bypass_way_sector == count_of_bypass_points - 1:
+                    print "\n\nCheck point: ",self._previus_moving_state
                     self.setMovingState(self._previus_moving_state)
 
                 return return_value
@@ -291,15 +294,13 @@ class Brain(object):
 
     def getGoHomeWayDirection(self):
         print "getGoHomeWayDirection"
-        #self._passed_way
-        #self._passed_way_index
-        # {Brain.kPosition: next_point.getArr()}
 
         pos_arr = self._passed_way[self._passed_way_index]
         return_value = {Brain.kPosition: pos_arr}
         self._passed_way_index -= 1
         if self._passed_way_index == -1:
             self._passed_way_index = 0
+
             self.changePassedWayIfNeed()
 
             for observer in self.observers:

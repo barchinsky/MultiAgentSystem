@@ -8,7 +8,8 @@
 float Math::length(float x, float y)
 {
     float length = qSqrt(qPow(x,2) + qPow(y,2));
-    length = round(length * 10000) / 10000.0;
+    length = round(length * 100) / 100.0;
+    qDebug() << "Length " << length;
     return length;
 }
 
